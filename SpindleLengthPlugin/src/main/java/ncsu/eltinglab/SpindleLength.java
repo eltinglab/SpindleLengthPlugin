@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.gui.ImageCanvas;
 import ij.gui.OvalRoi;
 import ij.gui.Roi;
@@ -209,7 +210,7 @@ public class SpindleLength implements PlugInFilter {
 		}
 		thresh = Double.valueOf(s2);
 		
-//		System.out.println("threshold: " + thresh);
+		System.out.println("threshold: " + thresh);
 		
 		// sets all pixels below the threshold to zero intensity
 		//im.show();
@@ -222,8 +223,8 @@ public class SpindleLength implements PlugInFilter {
 		}
 		
 		// checks for isolated random bright pixels and sets them to zero
-		for (int i = 1; i < proc.getWidth() - 1; i++) {
-			for (int j = 1; j < proc.getHeight() - 1; j++) {
+		for (int i = 0; i < proc.getWidth() - 1; i++) {
+			for (int j = 0; j < proc.getHeight() - 1; j++) {
 				if (proc.get(i, j) != 0 ) {
 					if (proc.get(i, j + 1) == 0 && proc.get(i, j - 1) == 0) {
 						if (proc.get(i + 1, j) == 0 && proc.get(i - 1, j) == 0) {
@@ -235,22 +236,24 @@ public class SpindleLength implements PlugInFilter {
 			}
 		}
 		
+		im.show();
 		// calculates center of mass coordinates
 		double xsum = 0;
 		double ysum = 0;
 		double mass = 0.0;
-		for (int i = 0; i < proc.getWidth(); i++) {
-			for (int j = 0; j < proc.getHeight(); j++) {
+		for (int i = 1; i < proc.getWidth(); i++) {
+			for (int j = 1; j < proc.getHeight(); j++) {
 				mass += proc.get(i, j);
 				xsum += proc.get(i, j) * i;
 				ysum += proc.get(i, j) * j;
+				//System.out.println("hello");
 			}
 		}
 		
-		double xcm = xsum / mass;
-		double ycm = ysum / mass;
+		double xcm = xsum/mass;
+		double ycm = ysum/mass;
 
-//		System.out.println("Center of mass: (" + xcm + "," + ycm + ")");
+		System.out.println("Center of mass: (" + xcm + "," + ycm + ")");
 
 		// calculates moment of inertia tensor "matrix"
 		double Ixx = 0;
@@ -278,8 +281,8 @@ public class SpindleLength implements PlugInFilter {
 			e.printStackTrace();
 		}
 		
-//		System.out.println("x vector: " + xvector);
-//		System.out.println("y vector: " + yvector);
+		System.out.println("x vector: " + xvector);
+		System.out.println("y vector: " + yvector);
 		
 		// backtrack vector from center of mass to edge of image
 		double x = xcm;
@@ -289,11 +292,11 @@ public class SpindleLength implements PlugInFilter {
 			y += yvector;
 		}
 
-//		double bottomx = x;
-//		double bottomy = y;
-//		
-//		System.out.println("bottomx: " + bottomx);
-//		System.out.println("bottomy: " + bottomy);
+		double bottomx = x;
+		double bottomy = y;
+		
+		System.out.println("bottomx: " + bottomx);
+		System.out.println("bottomy: " + bottomy);
 		
 		ArrayList<Integer> intensities = new ArrayList<Integer>();
 		ArrayList<Integer> indexes = new ArrayList<Integer>();
@@ -305,8 +308,8 @@ public class SpindleLength implements PlugInFilter {
 			x += -1 * xvector;
 			y += -1 * yvector;
 			
-//			System.out.println("x: " + x);
-//			System.out.println("y: " + y);
+			System.out.println("x: " + x);
+			System.out.println("y: " + y);
 			intensities.add(proc.get((int) x,(int) y)); 
 //			try {
 //				proc.set((int) x, (int) y, 65000); // this modifies the actual image 
@@ -352,8 +355,12 @@ public class SpindleLength implements PlugInFilter {
 		m.addRoi(circle);
 		m.addRoi(circle2);
 		
+		double deltax = Math.abs(pointsx.get(minindex) - pointsx.get(maxindex));
+		double deltay = Math.abs(pointsy.get(minindex) - pointsy.get(maxindex));
+
+		
 		// calculate and return spindle length
-		double length = Math.sqrt(((pointsy.get(maxindex) - pointsy.get(minindex)) * (pointsy.get(maxindex) - pointsy.get(minindex)) + (pointsx.get(maxindex) - pointsx.get(minindex))*(pointsx.get(maxindex) - pointsx.get(minindex))));
+		double length = Math.sqrt(deltax * deltax + deltay * deltay);
 		return length;
 
 	}
@@ -376,20 +383,20 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Cell1.tif";
+		String imageName = "input/Cell2.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 		
-		
+		ImageStack empty = stack.createEmptyStack();
 		RoiManager manager = new RoiManager();
 		
 		ArrayList<Double> lengths = new ArrayList<Double>();
 		ArrayList<Integer> frames = new ArrayList<Integer>();
 		
 		// go through all frames in the movie and record the spindle length in each one
-		for (int framenum = 1; framenum <= stack.getStackSize(); framenum++) {
+		for (int framenum = 30; framenum <= stack.getStackSize(); framenum++) {
 			ImagePlus frame = IJ.openImage(imageName, framenum);
-			frame.show();
+			//frame.show();
 			System.out.println("Frame number: " + framenum);
 			double length = -1; // the length will stay negative if the algorithm can't measure it
 			try {
@@ -398,7 +405,7 @@ public class SpindleLength implements PlugInFilter {
 			} catch (Exception e) {
 				System.out.println("Had trouble measuring frame " + framenum + " :(");
 			}
-			
+			empty.addSlice(frame.getProcessor());
 			lengths.add(length);
 			frames.add(framenum);
 			try {
