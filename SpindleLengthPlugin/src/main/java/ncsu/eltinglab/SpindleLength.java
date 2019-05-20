@@ -181,7 +181,41 @@ public class SpindleLength implements PlugInFilter {
 	}
 
 	public static double getLength(ImagePlus im, RoiManager m) {
+		
 		ImageProcessor proc = im.getProcessor();
+		
+		// normalize all images (with linear transformation) so they go from 0 to 65000
+
+		double maximum = Integer.MIN_VALUE;
+		double minimum = Integer.MAX_VALUE;
+		
+		for (int i = 0; i < proc.getWidth(); i++) {
+			for (int j = 0; j < proc.getHeight(); j++) {
+				if (proc.get(i,j) > maximum) {
+					maximum = proc.get(i, j);
+				}
+				if (proc.get(i,j) < minimum) {
+					minimum = proc.get(i, j);
+				}
+				
+			}
+		}
+		
+		System.out.println("maximum: " + maximum);
+		System.out.println("maximum: " + minimum);
+
+		
+		double slope = 65000.0 / (maximum - minimum);
+		double intercept = -1 * slope * minimum;
+		
+		for (int i = 0; i < proc.getWidth(); i++) {
+			for (int j = 0; j < proc.getHeight(); j++) {
+				int old = proc.get(i,j);
+				double n = slope * old + intercept;
+				//System.out.println(old + ", " + (int) n);
+				proc.set(i, j, (int) n);
+			}
+		}
 		
 		// Making a giant comma-separated list of pixel values to pass into the 
 		// Python script as a fake command line argument
@@ -210,14 +244,17 @@ public class SpindleLength implements PlugInFilter {
 		}
 		thresh = Double.valueOf(s2);
 		
+		
 		System.out.println("threshold: " + thresh);
 		
 		// sets all pixels below the threshold to zero intensity
-		//im.show();
+		
 		for (int i = 0; i < proc.getWidth(); i++) {
 			for (int j = 0; j < proc.getHeight(); j++) {
 				if (proc.get(i, j) < thresh) {
 					proc.set(i, j, 0);
+				} else {
+					System.out.println("larger");
 				}
 			}
 		}
@@ -236,7 +273,7 @@ public class SpindleLength implements PlugInFilter {
 			}
 		}
 		
-		im.show();
+		//im.show();
 		// calculates center of mass coordinates
 		double xsum = 0;
 		double ysum = 0;
@@ -307,9 +344,9 @@ public class SpindleLength implements PlugInFilter {
 		do {
 			x += -1 * xvector;
 			y += -1 * yvector;
-			
-			System.out.println("x: " + x);
-			System.out.println("y: " + y);
+//			
+//			System.out.println("x: " + x);
+//			System.out.println("y: " + y);
 			intensities.add(proc.get((int) x,(int) y)); 
 //			try {
 //				proc.set((int) x, (int) y, 65000); // this modifies the actual image 
@@ -340,7 +377,7 @@ public class SpindleLength implements PlugInFilter {
 				break;
 			}
 		}
-		//im.show();
+		im.show();
 		
 		// add red ROI circles on the ends of the spindle and add them to the ROI manager.
 		Vector<Roi> displayList = new Vector<Roi>();
@@ -383,7 +420,7 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Cell2.tif";
+		String imageName = "input/Stack.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 		
@@ -394,7 +431,7 @@ public class SpindleLength implements PlugInFilter {
 		ArrayList<Integer> frames = new ArrayList<Integer>();
 		
 		// go through all frames in the movie and record the spindle length in each one
-		for (int framenum = 30; framenum <= stack.getStackSize(); framenum++) {
+		for (int framenum = 1; framenum <= stack.getStackSize(); framenum++) {
 			ImagePlus frame = IJ.openImage(imageName, framenum);
 			//frame.show();
 			System.out.println("Frame number: " + framenum);
@@ -406,7 +443,7 @@ public class SpindleLength implements PlugInFilter {
 				System.out.println("Had trouble measuring frame " + framenum + " :(");
 			}
 			empty.addSlice(frame.getProcessor());
-			lengths.add(length);
+			lengths.add(length + 5);
 			frames.add(framenum);
 			try {
 				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
