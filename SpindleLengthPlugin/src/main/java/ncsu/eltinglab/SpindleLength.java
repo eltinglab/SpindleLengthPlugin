@@ -25,6 +25,7 @@ import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.gui.GenericDialog;
 import ij.gui.ImageCanvas;
 import ij.gui.OvalRoi;
 import ij.gui.Roi;
@@ -84,7 +85,7 @@ public class SpindleLength implements PlugInFilter {
 //		gd.showDialog();
 //		if (gd.wasCanceled())
 //			return false;
-
+//
 //		// get entered values
 //		value = gd.getNextNumber();
 //		name = gd.getNextString();
@@ -253,9 +254,7 @@ public class SpindleLength implements PlugInFilter {
 			for (int j = 0; j < proc.getHeight(); j++) {
 				if (proc.get(i, j) < thresh) {
 					proc.set(i, j, 0);
-				} else {
-					System.out.println("larger");
-				}
+				} 
 			}
 		}
 		
@@ -309,11 +308,16 @@ public class SpindleLength implements PlugInFilter {
 		// passes in matrix string to python script which outputs principal eigenvectors
 		double xvector = 1.0;
 		double yvector = 1.0;
+		
+		double minorx = 1.0;
+		double minory = 1.0;
 		try {
 			Process p = Runtime.getRuntime().exec("python python/lazylinalg.py " + matrixString);
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
             xvector = Double.valueOf(stdInput.readLine());
             yvector = Double.valueOf(stdInput.readLine());
+            minorx = Double.valueOf(stdInput.readLine());
+            minorx = Double.valueOf(stdInput.readLine());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -336,6 +340,7 @@ public class SpindleLength implements PlugInFilter {
 		System.out.println("bottomy: " + bottomy);
 		
 		ArrayList<Integer> intensities = new ArrayList<Integer>();
+		ArrayList<Integer> intensities_integrate = new ArrayList<Integer>();
 		ArrayList<Integer> indexes = new ArrayList<Integer>();
 		ArrayList<Double> pointsx = new ArrayList<Double>();
 		ArrayList<Double> pointsy = new ArrayList<Double>();
@@ -344,16 +349,24 @@ public class SpindleLength implements PlugInFilter {
 		do {
 			x += -1 * xvector;
 			y += -1 * yvector;
-//			
+		
 //			System.out.println("x: " + x);
 //			System.out.println("y: " + y);
-			intensities.add(proc.get((int) x,(int) y)); 
+			int intensity = proc.get((int) x,(int) y);
+			intensities.add(intensity);
+			
+			intensity += proc.get((int) (x + minorx), (int) (y + minory));
+			intensity += proc.get((int) (x + 2 * minorx), (int) (y + 2 * minory));
+			intensity += proc.get((int) (x - minorx), (int) (y - minory));
+			intensity += proc.get((int) (x - 2 * minorx), (int) (y - 2 * minory));
+			
 //			try {
 //				proc.set((int) x, (int) y, 65000); // this modifies the actual image 
 //				// so we should use this only for visualization purposes
 //			} catch (Exception e) {
 //				//do nothing
 //			}
+			intensities_integrate.add(intensity);
 			indexes.add(index);
 			index++;
 			pointsx.add(x);
@@ -379,6 +392,36 @@ public class SpindleLength implements PlugInFilter {
 		}
 		im.show();
 		
+		// runs curve fitting code
+		StringBuilder intenseString = new StringBuilder("");
+		StringBuilder indexString = new StringBuilder("");
+		for (int i = 0; i < intensities.size(); i++) {
+			intenseString.append(intensities.get(i) + ",");
+			indexString.append(indexes.get(i) + ",");
+		}
+		
+		
+
+		intenseString.deleteCharAt(intenseString.length() - 1);
+		indexString.deleteCharAt(indexString.length() - 1); //removes trailing comma
+//		
+//		Double l = 0.0;
+//
+//		try {
+//			Process p = Runtime.getRuntime().exec("python python/curvefit.py " + indexString + " " + intenseString);
+//			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+//			//System.out.println(stdInput.readLine());
+//			while ((s1 = stdInput.readLine()) != null) {
+//                System.out.println(s1);
+//            }
+//            
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//
+//
+//		
+		
 		// add red ROI circles on the ends of the spindle and add them to the ROI manager.
 		Vector<Roi> displayList = new Vector<Roi>();
 		Roi circle = new OvalRoi(pointsx.get(minindex), pointsy.get(minindex), 5, 5);
@@ -395,7 +438,6 @@ public class SpindleLength implements PlugInFilter {
 		double deltax = Math.abs(pointsx.get(minindex) - pointsx.get(maxindex));
 		double deltay = Math.abs(pointsy.get(minindex) - pointsy.get(maxindex));
 
-		
 		// calculate and return spindle length
 		double length = Math.sqrt(deltax * deltax + deltay * deltay);
 		return length;
@@ -420,9 +462,19 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Stack.tif";
+		String imageName = "input/Cell1.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
+
+		GenericDialog gd = new GenericDialog("New Image");
+		String filename = "output/lengths.csv";
+		gd.addStringField("Enter file name", filename);
+		filename = gd.getNextString();
+		gd.showDialog();
+		if (gd.wasCanceled()) {
+		  System.exit(1);
+		}
+
 		
 		ImageStack empty = stack.createEmptyStack();
 		RoiManager manager = new RoiManager();
@@ -431,7 +483,7 @@ public class SpindleLength implements PlugInFilter {
 		ArrayList<Integer> frames = new ArrayList<Integer>();
 		
 		// go through all frames in the movie and record the spindle length in each one
-		for (int framenum = 1; framenum <= stack.getStackSize(); framenum++) {
+		for (int framenum = 50; framenum <= stack.getStackSize(); framenum++) {
 			ImagePlus frame = IJ.openImage(imageName, framenum);
 			//frame.show();
 			System.out.println("Frame number: " + framenum);
@@ -453,18 +505,26 @@ public class SpindleLength implements PlugInFilter {
 			frame.close(); // close image that is opened in the getLength() method
 		}
 		
+		// wait for people to update the ROIs if they need to
+		
 		// write data to output file here
-		File f = new File("output/lengths.csv");
+		File f = new File(filename);
 		PrintStream out = null;
 		try {
 			out = new PrintStream(f);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+
+		System.out.println(manager.getCount());
 		
-		for (int i = 0; i < frames.size(); i++) {
-			out.println(frames.get(i) + "," + lengths.get(i));
+		out.println("Frame number , x position, y position");
+		for (int i = 0; i < manager.getCount(); i++) {
+			out.println(((i / 2) + 1) + "," + manager.getRoi(i).getXBase() + " , " + manager.getRoi(i).getYBase());
 		}
+//		for (int i = 0; i < frames.size(); i++) {
+//			out.println(frames.get(i) + "," + lengths.get(i));
+//		}
 		out.close();
 		
 		IJ.runPlugIn(clazz.getName(), "");

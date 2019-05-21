@@ -14,9 +14,14 @@ w,v = scipy.linalg.eig(matrix)
 
 if np.abs(w[0]) > np.abs(w[1]): ## we want the eigenvector corresponding to the larger eigenvalue
     mainvector = v[:,0]
+    othervector = v[:,1]
 else:
     mainvector = v[:,1]
+    othervector = v[:,0]
 
 
 print(mainvector[0])
 print(mainvector[1])
+print(othervector[0])
+print(othervector[1])
+

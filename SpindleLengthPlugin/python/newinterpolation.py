@@ -3,7 +3,7 @@ import numpy as np
 import scipy.stats
 
 
-## uncomment below to read the values from interpolationdata2.csv and copy/paste them into arrays below.
+## uncomment below to read the values from interpolationdatanorm.csv and copy/paste them into arrays below.
 # import csv
 
 # # maxima = []
@@ -40,8 +40,6 @@ skews = [4.080247448270712,2.386595236812479,2.722243965539885,2.195442762782074
 thresholds = [25000,24000,40000,47000,45000,26000,46000,30000,47000,42000,47000,46000,48000,39000,30000,39000,39000,43000,42000,34000,40000,44000,60000,49000,63000,49000,27000,50000,48000,36000,36000,43000,53000,32000,42000,39000,40000,43000,25000,45000,44000,36000,33000,41000,45000,42000,39000,25000,45000,35000,38000,45000]
 
 import scipy.interpolate
-
-#hi = scipy.interpolate.Rbf(maxima, stdevs, means, minima, skews, thresholds, function = "linear")
 
 hi = scipy.interpolate.Rbf(stdevs, means, skews, thresholds, function = "linear")
 
