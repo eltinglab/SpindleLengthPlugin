@@ -358,15 +358,18 @@ public class SpindleLength implements PlugInFilter {
 		
 //			System.out.println("x: " + x);
 //			System.out.println("y: " + y);
-			int intensity = proc.get((int) x,(int) y);
+			
 			intensities.add(proc.get((int) x,(int) y));
 
-//			
-
-//			intensity += proc2.get((int) (x + minorx), (int) (y + minory));
-//			intensity += proc2.get((int) (x - minorx), (int) (y - minory));
-
-			intensities_integrate.add(intensity / 1000);
+			int intensity = proc2.get((int) x,(int) y) / 1000;
+			if ((x + minorx < proc.getWidth() && x + minorx > 0) && (x - minorx < proc.getWidth() && x - minorx > 0)) {
+				if ((y + minory < proc.getHeight() && y + minory > 0) && (y - minory < proc.getHeight() && y - minory > 0)) {
+					intensity += (proc2.get((int)(x + minorx), (int) (y + minory)) / 1000);
+					intensity += (proc2.get((int)(x - minorx), (int) (y - minory)) / 1000);	
+				}
+			}
+			
+			intensities_integrate.add(intensity);
 //			try {
 //				proc.set((int) x, (int) y, 65000); // this modifies the actual image 
 //				// so we should use this only for visualization purposes
@@ -465,7 +468,7 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Cell2.tif";
+		String imageName = "input/Cell1.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
@@ -521,13 +524,13 @@ public class SpindleLength implements PlugInFilter {
 
 		System.out.println(manager.getCount());
 		
-		out.println("Frame number , x position, y position");
-		for (int i = 0; i < manager.getCount(); i++) {
-			out.println(((i / 2) + 1) + "," + manager.getRoi(i).getXBase() + " , " + manager.getRoi(i).getYBase());
-		}
-//		for (int i = 0; i < frames.size(); i++) {
-//			out.println(frames.get(i) + "," + lengths.get(i));
+//		out.println("Frame number , x position, y position");
+//		for (int i = 0; i < manager.getCount(); i++) {
+//			out.println(((i / 2) + 1) + "," + manager.getRoi(i).getXBase() + " , " + manager.getRoi(i).getYBase());
 //		}
+		for (int i = 0; i < frames.size(); i++) {
+			out.println(frames.get(i) + "," + lengths.get(i));
+		}
 		out.close();
 		
 		IJ.runPlugIn(clazz.getName(), "");
