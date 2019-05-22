@@ -233,6 +233,7 @@ public class SpindleLength implements PlugInFilter {
 		String s1 = null;
 		String s2 = null;
 		double thresh = 0.0;
+		System.out.println(pixelString.length());
 		try {
 			Process p = Runtime.getRuntime().exec("python python/newinterpolation.py " + pixelString);
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -246,7 +247,7 @@ public class SpindleLength implements PlugInFilter {
 		thresh = Double.valueOf(s2);
 		
 		
-		System.out.println("threshold: " + thresh);
+		// System.out.println("threshold: " + thresh);
 		
 		// sets all pixels below the threshold to zero intensity
 		
@@ -289,7 +290,7 @@ public class SpindleLength implements PlugInFilter {
 		double xcm = xsum/mass;
 		double ycm = ysum/mass;
 
-		System.out.println("Center of mass: (" + xcm + "," + ycm + ")");
+		// System.out.println("Center of mass: (" + xcm + "," + ycm + ")");
 
 		// calculates moment of inertia tensor "matrix"
 		double Ixx = 0;
@@ -322,8 +323,8 @@ public class SpindleLength implements PlugInFilter {
 			e.printStackTrace();
 		}
 		
-		System.out.println("x vector: " + xvector);
-		System.out.println("y vector: " + yvector);
+//		System.out.println("x vector: " + xvector);
+//		System.out.println("y vector: " + yvector);
 		
 		// backtrack vector from center of mass to edge of image
 		double x = xcm;
@@ -336,8 +337,8 @@ public class SpindleLength implements PlugInFilter {
 		double bottomx = x;
 		double bottomy = y;
 		
-		System.out.println("bottomx: " + bottomx);
-		System.out.println("bottomy: " + bottomy);
+//		System.out.println("bottomx: " + bottomx);
+//		System.out.println("bottomy: " + bottomy);
 		
 		ArrayList<Integer> intensities = new ArrayList<Integer>();
 		ArrayList<Integer> intensities_integrate = new ArrayList<Integer>();
@@ -353,20 +354,20 @@ public class SpindleLength implements PlugInFilter {
 //			System.out.println("x: " + x);
 //			System.out.println("y: " + y);
 			int intensity = proc.get((int) x,(int) y);
-			intensities.add(intensity);
-			
-			intensity += proc.get((int) (x + minorx), (int) (y + minory));
-			intensity += proc.get((int) (x + 2 * minorx), (int) (y + 2 * minory));
-			intensity += proc.get((int) (x - minorx), (int) (y - minory));
-			intensity += proc.get((int) (x - 2 * minorx), (int) (y - 2 * minory));
-			
+			intensities.add(proc.get((int) x,(int) y));
+//			
+//			intensity += proc.get((int) (x + minorx), (int) (y + minory));
+//			intensity += proc.get((int) (x + 2 * minorx), (int) (y + 2 * minory));
+//			intensity += proc.get((int) (x - minorx), (int) (y - minory));
+//			intensity += proc.get((int) (x - 2 * minorx), (int) (y - 2 * minory));
+//			
 //			try {
 //				proc.set((int) x, (int) y, 65000); // this modifies the actual image 
 //				// so we should use this only for visualization purposes
 //			} catch (Exception e) {
 //				//do nothing
 //			}
-			intensities_integrate.add(intensity);
+			//intensities_integrate.add(intensity);
 			indexes.add(index);
 			index++;
 			pointsx.add(x);
@@ -400,28 +401,21 @@ public class SpindleLength implements PlugInFilter {
 			indexString.append(indexes.get(i) + ",");
 		}
 		
-		
-
 		intenseString.deleteCharAt(intenseString.length() - 1);
-		indexString.deleteCharAt(indexString.length() - 1); //removes trailing comma
-//		
-//		Double l = 0.0;
-//
-//		try {
-//			Process p = Runtime.getRuntime().exec("python python/curvefit.py " + indexString + " " + intenseString);
-//			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
-//			//System.out.println(stdInput.readLine());
-//			while ((s1 = stdInput.readLine()) != null) {
-//                System.out.println(s1);
-//            }
-//            
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//
-//
-//		
-		
+		indexString.deleteCharAt(indexString.length() - 1); // removes trailing comma
+
+		double l = 1.0;
+		try {
+			Process p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString);
+			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            while ((s1 = stdInput.readLine()) != null) {
+                l = Double.valueOf(s1);
+            }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		System.out.println("Curve fit length: " + l);
+
 		// add red ROI circles on the ends of the spindle and add them to the ROI manager.
 		Vector<Roi> displayList = new Vector<Roi>();
 		Roi circle = new OvalRoi(pointsx.get(minindex), pointsy.get(minindex), 5, 5);
@@ -483,7 +477,7 @@ public class SpindleLength implements PlugInFilter {
 		ArrayList<Integer> frames = new ArrayList<Integer>();
 		
 		// go through all frames in the movie and record the spindle length in each one
-		for (int framenum = 50; framenum <= stack.getStackSize(); framenum++) {
+		for (int framenum = 1; framenum <= stack.getStackSize(); framenum++) {
 			ImagePlus frame = IJ.openImage(imageName, framenum);
 			//frame.show();
 			System.out.println("Frame number: " + framenum);
