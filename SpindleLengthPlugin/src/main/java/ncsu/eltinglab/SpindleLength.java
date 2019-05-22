@@ -181,7 +181,7 @@ public class SpindleLength implements PlugInFilter {
 		);
 	}
 
-	public static double getLength(ImagePlus im, RoiManager m) {
+	public static String getLength(ImagePlus im, RoiManager m) {
 		
 		ImageProcessor proc = im.getProcessor();
 		ImageProcessor proc2 = proc.duplicate();
@@ -362,10 +362,12 @@ public class SpindleLength implements PlugInFilter {
 			intensities.add(proc.get((int) x,(int) y));
 
 			int intensity = proc2.get((int) x,(int) y) / 1000;
-			if ((x + minorx < proc.getWidth() && x + minorx > 0) && (x - minorx < proc.getWidth() && x - minorx > 0)) {
-				if ((y + minory < proc.getHeight() && y + minory > 0) && (y - minory < proc.getHeight() && y - minory > 0)) {
+			if ((x + 2 * minorx < proc.getWidth() && x + 2 * minorx > 0) && (x - 2 * minorx < proc.getWidth() && x - 2*minorx > 0)) {
+				if ((y + 2 * minory < proc.getHeight() && y + 2 * minory > 0) && (y - 2*minory < proc.getHeight() && y - 2*minory > 0)) {
 					intensity += (proc2.get((int)(x + minorx), (int) (y + minory)) / 1000);
 					intensity += (proc2.get((int)(x - minorx), (int) (y - minory)) / 1000);	
+					intensity += (proc2.get((int)(x + 2 * minorx), (int) (y + 2 * minory)) / 1000);
+					intensity += (proc2.get((int)(x - 2 * minorx), (int) (y - 2 * minory)) / 1000);	
 				}
 			}
 			
@@ -446,7 +448,20 @@ public class SpindleLength implements PlugInFilter {
 
 		// calculate and return spindle length
 		double length = Math.sqrt(deltax * deltax + deltay * deltay);
-		return length;
+//		if (rsquared >= 0.8 && l < proc.getHeight() && l < proc.getWidth()) {
+//			return l;
+//		}
+		
+
+		StringBuilder b = new StringBuilder("");
+		b.append((length + 5) + ",");
+		if (rsquared >= 0.8 && l < proc.getHeight() && l < proc.getWidth()) {
+			b.append((l + 5) + ",");
+		} else {
+			b.append((length + 5) + ",");
+		}
+		b.append((l + 5));
+		return b.toString();
 
 	}
 	/**
@@ -468,7 +483,7 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Cell1.tif";
+		String imageName = "input/Cell2.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
@@ -486,6 +501,8 @@ public class SpindleLength implements PlugInFilter {
 		RoiManager manager = new RoiManager();
 		
 		ArrayList<Double> lengths = new ArrayList<Double>();
+		ArrayList<String> lengthstrings = new ArrayList<String>();
+
 		ArrayList<Integer> frames = new ArrayList<Integer>();
 		
 		// go through all frames in the movie and record the spindle length in each one
@@ -493,21 +510,22 @@ public class SpindleLength implements PlugInFilter {
 			ImagePlus frame = IJ.openImage(imageName, framenum);
 			//frame.show();
 			System.out.println("Frame number: " + framenum);
-			double length = -1; // the length will stay negative if the algorithm can't measure it
+			//double length = -1; // the length will stay negative if the algorithm can't measure it
 			try {
-				length = getLength(frame, manager);
-				System.out.println("Length: " + length);
+//				length = getLength(frame, manager);
+//				System.out.println("Length: " + length);
+				lengthstrings.add(getLength(frame, manager));
 			} catch (Exception e) {
 				System.out.println("Had trouble measuring frame " + framenum + " :(");
 			}
 			empty.addSlice(frame.getProcessor());
-			lengths.add(length + 5);
+			//lengths.add(length + 5);
 			frames.add(framenum);
-			try {
-				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+//			try {
+//				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
 			frame.close(); // close image that is opened in the getLength() method
 		}
 		
@@ -529,7 +547,7 @@ public class SpindleLength implements PlugInFilter {
 //			out.println(((i / 2) + 1) + "," + manager.getRoi(i).getXBase() + " , " + manager.getRoi(i).getYBase());
 //		}
 		for (int i = 0; i < frames.size(); i++) {
-			out.println(frames.get(i) + "," + lengths.get(i));
+			out.println(frames.get(i) + "," + lengthstrings.get(i));
 		}
 		out.close();
 		
