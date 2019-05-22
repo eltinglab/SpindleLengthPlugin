@@ -184,6 +184,7 @@ public class SpindleLength implements PlugInFilter {
 	public static double getLength(ImagePlus im, RoiManager m) {
 		
 		ImageProcessor proc = im.getProcessor();
+		ImageProcessor proc2 = proc.duplicate();
 		
 		// normalize all images (with linear transformation) so they go from 0 to 65000
 
@@ -205,6 +206,7 @@ public class SpindleLength implements PlugInFilter {
 		System.out.println("maximum: " + maximum);
 		System.out.println("maximum: " + minimum);
 
+
 		
 		double slope = 65000.0 / (maximum - minimum);
 		double intercept = -1 * slope * minimum;
@@ -218,6 +220,8 @@ public class SpindleLength implements PlugInFilter {
 			}
 		}
 		
+		im.show();
+
 		// Making a giant comma-separated list of pixel values to pass into the 
 		// Python script as a fake command line argument
 		StringBuilder pixelString = new StringBuilder("");
@@ -240,12 +244,12 @@ public class SpindleLength implements PlugInFilter {
             while ((s1 = stdInput.readLine()) != null) {
                 s2 = s1;
             }
+            p.destroy();
 		
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		thresh = Double.valueOf(s2);
-		
 		
 		// System.out.println("threshold: " + thresh);
 		
@@ -319,6 +323,7 @@ public class SpindleLength implements PlugInFilter {
             yvector = Double.valueOf(stdInput.readLine());
             minorx = Double.valueOf(stdInput.readLine());
             minorx = Double.valueOf(stdInput.readLine());
+            p.destroy();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -355,12 +360,13 @@ public class SpindleLength implements PlugInFilter {
 //			System.out.println("y: " + y);
 			int intensity = proc.get((int) x,(int) y);
 			intensities.add(proc.get((int) x,(int) y));
+
 //			
-//			intensity += proc.get((int) (x + minorx), (int) (y + minory));
-//			intensity += proc.get((int) (x + 2 * minorx), (int) (y + 2 * minory));
-//			intensity += proc.get((int) (x - minorx), (int) (y - minory));
-//			intensity += proc.get((int) (x - 2 * minorx), (int) (y - 2 * minory));
-//			
+
+//			intensity += proc2.get((int) (x + minorx), (int) (y + minory));
+//			intensity += proc2.get((int) (x - minorx), (int) (y - minory));
+
+			intensities_integrate.add(intensity / 1000);
 //			try {
 //				proc.set((int) x, (int) y, 65000); // this modifies the actual image 
 //				// so we should use this only for visualization purposes
@@ -391,29 +397,32 @@ public class SpindleLength implements PlugInFilter {
 				break;
 			}
 		}
-		im.show();
+		//im.show();
 		
 		// runs curve fitting code
 		StringBuilder intenseString = new StringBuilder("");
 		StringBuilder indexString = new StringBuilder("");
 		for (int i = 0; i < intensities.size(); i++) {
-			intenseString.append(intensities.get(i) + ",");
+			intenseString.append(intensities_integrate.get(i) + ",");
 			indexString.append(indexes.get(i) + ",");
 		}
 		
 		intenseString.deleteCharAt(intenseString.length() - 1);
 		indexString.deleteCharAt(indexString.length() - 1); // removes trailing comma
 
+		double rsquared = 0.0;
 		double l = 1.0;
 		try {
 			Process p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString);
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            while ((s1 = stdInput.readLine()) != null) {
-                l = Double.valueOf(s1);
-            }
+            
+			rsquared = Double.valueOf(stdInput.readLine());
+            l = Double.valueOf(stdInput.readLine());
+            p.destroy();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.out.println("R squared: " + rsquared);
 		System.out.println("Curve fit length: " + l);
 
 		// add red ROI circles on the ends of the spindle and add them to the ROI manager.
@@ -456,7 +465,7 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Cell1.tif";
+		String imageName = "input/Cell2.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
