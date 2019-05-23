@@ -28,7 +28,7 @@ b = np.array([float(i) for i in b])
 #print(len(a), len(b))
 
 try:
-    p, c = scipy.optimize.curve_fit(pwerf, a, b, [200, 1, 1, 10, 17, 25,120])
+    p, c = scipy.optimize.curve_fit(pwerf, a, b, [100, 100, 0.4, 50, 50, 100,65])
 except Exception as e:
     print(e)
 

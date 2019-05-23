@@ -483,7 +483,7 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Cell2.tif";
+		String imageName = "input/Cell3.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
@@ -514,13 +514,14 @@ public class SpindleLength implements PlugInFilter {
 			try {
 //				length = getLength(frame, manager);
 //				System.out.println("Length: " + length);
+				frames.add(framenum);
 				lengthstrings.add(getLength(frame, manager));
 			} catch (Exception e) {
 				System.out.println("Had trouble measuring frame " + framenum + " :(");
 			}
 			empty.addSlice(frame.getProcessor());
 			//lengths.add(length + 5);
-			frames.add(framenum);
+			
 //			try {
 //				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
 //			} catch (InterruptedException e) {
