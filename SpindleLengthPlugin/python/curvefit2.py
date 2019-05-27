@@ -43,17 +43,19 @@ arg5 = (maxindex + medianindex) / 2
 arg6 = np.average(b)
 arg7 = (minindex + maxindex) / 2
 
+## curve fit
 try:
     p, c = scipy.optimize.curve_fit(pwerf, a, b, [arg1, arg2, arg3, arg4, arg5, arg6, arg7])
 except Exception as e:
     print(e)
 
-
+## calculate r squared values
 residuals = b - np.array(pwerf(a, p[0], p[1], p[2], p[3], p[4], p[5], p[6]))
 ss_res = np.sum(residuals**2)
 ss_tot = np.sum((b-np.mean(b))**2)
 r_squared = 1 - (ss_res / ss_tot)
-#print(np.max(b))
+
+## output r squared and length
 print(r_squared)
 print(np.abs(p[4]/p[2] - p[3]/p[2]))
 
