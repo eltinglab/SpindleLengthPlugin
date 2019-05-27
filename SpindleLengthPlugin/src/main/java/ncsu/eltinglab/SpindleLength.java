@@ -184,12 +184,14 @@ public class SpindleLength implements PlugInFilter {
 	public static String getLength(ImagePlus im, RoiManager m) {
 		
 		ImageProcessor proc = im.getProcessor();
-		ImageProcessor proc2 = proc.duplicate();
+
 		
 		// normalize all images (with linear transformation) so they go from 0 to 65000
 
 		double maximum = Integer.MIN_VALUE;
 		double minimum = Integer.MAX_VALUE;
+		
+		im.show();
 		
 		for (int i = 0; i < proc.getWidth(); i++) {
 			for (int j = 0; j < proc.getHeight(); j++) {
@@ -215,13 +217,16 @@ public class SpindleLength implements PlugInFilter {
 			for (int j = 0; j < proc.getHeight(); j++) {
 				int old = proc.get(i,j);
 				double n = slope * old + intercept;
-				//System.out.println(old + ", " + (int) n);
+//				if (old > 150) {
+//					System.out.println(old + ", " + (int) n);
+//				}
+//				
 				proc.set(i, j, (int) n);
 			}
 		}
 		
-		im.show();
-
+		
+		ImageProcessor proc2 = proc.duplicate();
 		// Making a giant comma-separated list of pixel values to pass into the 
 		// Python script as a fake command line argument
 		StringBuilder pixelString = new StringBuilder("");
@@ -251,7 +256,7 @@ public class SpindleLength implements PlugInFilter {
 		}
 		thresh = Double.valueOf(s2);
 		
-		// System.out.println("threshold: " + thresh);
+		 System.out.println("threshold: " + thresh);
 		
 		// sets all pixels below the threshold to zero intensity
 		
@@ -342,8 +347,8 @@ public class SpindleLength implements PlugInFilter {
 		double bottomx = x;
 		double bottomy = y;
 		
-//		System.out.println("bottomx: " + bottomx);
-//		System.out.println("bottomy: " + bottomy);
+		System.out.println("bottomx: " + bottomx);
+		System.out.println("bottomy: " + bottomy);
 		
 		ArrayList<Integer> intensities = new ArrayList<Integer>();
 		ArrayList<Integer> intensities_integrate = new ArrayList<Integer>();
@@ -352,10 +357,11 @@ public class SpindleLength implements PlugInFilter {
 		ArrayList<Double> pointsy = new ArrayList<Double>();
 		// iterates over pixels in line through spindle across the frame, adding them to above arrays
 		int index = 0;
+		int pivot = 0;
 		do {
 			x += -1 * xvector;
 			y += -1 * yvector;
-		
+//		
 //			System.out.println("x: " + x);
 //			System.out.println("y: " + y);
 			
@@ -368,17 +374,21 @@ public class SpindleLength implements PlugInFilter {
 					intensity += (proc2.get((int)(x - minorx), (int) (y - minory)) / 1000);	
 					intensity += (proc2.get((int)(x + 2 * minorx), (int) (y + 2 * minory)) / 1000);
 					intensity += (proc2.get((int)(x - 2 * minorx), (int) (y - 2 * minory)) / 1000);	
+//					intensity += (proc2.get((int)(x + 3 * minorx), (int) (y + 3 * minory)) / 1000);
+//					intensity += (proc2.get((int)(x - 3 * minorx), (int) (y - 3 * minory)) / 1000);	
 				}
 			}
 			
 			intensities_integrate.add(intensity);
+			if ((int) x == (int) xcm) {
+				pivot = (int) x;
+			}
 //			try {
 //				proc.set((int) x, (int) y, 65000); // this modifies the actual image 
 //				// so we should use this only for visualization purposes
 //			} catch (Exception e) {
 //				//do nothing
 //			}
-			//intensities_integrate.add(intensity);
 			indexes.add(index);
 			index++;
 			pointsx.add(x);
@@ -420,7 +430,7 @@ public class SpindleLength implements PlugInFilter {
 		try {
 			Process p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString);
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            
+            //System.out.println(stdInput.readLine());
 			rsquared = Double.valueOf(stdInput.readLine());
             l = Double.valueOf(stdInput.readLine());
             p.destroy();
@@ -483,7 +493,7 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Cell3.tif";
+		String imageName = "input/Stack.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
@@ -522,11 +532,11 @@ public class SpindleLength implements PlugInFilter {
 			empty.addSlice(frame.getProcessor());
 			//lengths.add(length + 5);
 			
-//			try {
-//				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
+			try {
+				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 			frame.close(); // close image that is opened in the getLength() method
 		}
 		
