@@ -24,6 +24,7 @@ a = sys.argv[1].split(",") ## indexes
 a = np.array([float(i) for i in a])
 b = sys.argv[2].split(",") ## intensities
 b = np.array([float(i) for i in b])
+cm = float(sys.argv[3])
 
 #print(len(a), len(b))
 
@@ -45,7 +46,7 @@ arg7 = (minindex + maxindex) / 2
 
 ## curve fit
 try:
-    p, c = scipy.optimize.curve_fit(pwerf, a, b, [arg1, arg2, arg3, arg4, arg5, arg6, arg7])
+    p, c = scipy.optimize.curve_fit(pwerf, a, b, [arg1, arg2, arg3, arg4, arg5, arg6, cm])
 except Exception as e:
     print(e)
 

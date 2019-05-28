@@ -382,8 +382,9 @@ public class SpindleLength implements PlugInFilter {
 			
 			intensities_integrate.add(intensity);
 			if ((int) x == (int) xcm) {
-				pivot = (int) x;
+				pivot = index;
 			}
+			
 //			try {
 //				proc.set((int) x, (int) y, 65000); // this modifies the actual image 
 //				// so we should use this only for visualization purposes
@@ -429,7 +430,7 @@ public class SpindleLength implements PlugInFilter {
 		double rsquared = 0.0;
 		double l = 1.0;
 		try {
-			Process p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString);
+			Process p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString + " " + pivot);
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
             //System.out.println(stdInput.readLine());
 			rsquared = Double.valueOf(stdInput.readLine());
@@ -453,11 +454,6 @@ public class SpindleLength implements PlugInFilter {
 		c.setDisplayList(displayList);
 		m.addRoi(circle);
 		m.addRoi(circle2);
-		im.setRoi(circle, true);
-//		//im.setRoi(circle2);
-		im.saveRoi();
-		im.setRoi(circle2, true);
-		
 		
 		double deltax = Math.abs(pointsx.get(minindex) - pointsx.get(maxindex));
 		double deltay = Math.abs(pointsy.get(minindex) - pointsy.get(maxindex));
@@ -471,7 +467,7 @@ public class SpindleLength implements PlugInFilter {
 
 		StringBuilder b = new StringBuilder("");
 		b.append((length + 5) + ",");
-		if (rsquared >= 0.8 && l < proc.getHeight() && l < proc.getWidth()) {
+		if (rsquared >= 0.75 && l < proc.getHeight() && l < proc.getWidth()) {
 			b.append((l + 5) + ",");
 		} else {
 			b.append((length + 5) + ",");
@@ -499,7 +495,7 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Stack.tif";
+		String imageName = "input/Cell2.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
@@ -568,6 +564,12 @@ public class SpindleLength implements PlugInFilter {
 //			out.println(((i / 2) + 1) + "," + manager.getRoi(i).getXBase() + " , " + manager.getRoi(i).getYBase());
 //		}
 		
+		for (int i = 0; i < frames.size(); i++) {
+			out.println(frames.get(i) + "," + lengthstrings.get(i));
+		}
+		out.close();
+		
+		
 		int roiCount = 0;
 		
 		for (int i = 0; i < frames.size(); i++) {
@@ -581,15 +583,12 @@ public class SpindleLength implements PlugInFilter {
 			displayList.add(manager.getRoi(i));
 		}
 		
-		ImageCanvas c = stack.getCanvas();
 		stack.setOverlay(displayList);
 		
-		for (int i = 0; i < frames.size(); i++) {
-			out.println(frames.get(i) + "," + lengthstrings.get(i));
-		}
-		out.close();
 		
 		//ImagePlus n = new ImagePlus("hello", empty);
+		
+		
 		
 		
 		IJ.runPlugIn(clazz.getName(), "");
