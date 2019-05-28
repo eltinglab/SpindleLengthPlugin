@@ -428,13 +428,18 @@ public class SpindleLength implements PlugInFilter {
 		indexString.deleteCharAt(indexString.length() - 1); // removes trailing comma
 
 		double rsquared = 0.0;
-		double l = 1.0;
+		double l = -1.0;
 		try {
 			Process p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString + " " + pivot);
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
             //System.out.println(stdInput.readLine());
-			rsquared = Double.valueOf(stdInput.readLine());
-            l = Double.valueOf(stdInput.readLine());
+			try {
+				rsquared = Double.valueOf(stdInput.readLine());
+	            l = Double.valueOf(stdInput.readLine());
+			} catch (Exception e) { // there was an error in the curve fitting
+				//do nothing
+			}
+			
             p.destroy();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -495,7 +500,7 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Cell2.tif";
+		String imageName = "input/Stack.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
@@ -519,6 +524,8 @@ public class SpindleLength implements PlugInFilter {
 
 		ArrayList<Integer> frames = new ArrayList<Integer>();
 		
+		int roiCount = 0;
+		
 		// go through all frames in the movie and record the spindle length in each one
 		for (int framenum = 1; framenum <= stack.getStackSize(); framenum++) {
 			ImagePlus frame = IJ.openImage(imageName, framenum);
@@ -530,6 +537,8 @@ public class SpindleLength implements PlugInFilter {
 //				System.out.println("Length: " + length);
 				lengthstrings.add(getLength(frame, manager));
 				frames.add(framenum);
+				manager.getRoi(roiCount++).setPosition(framenum);
+				manager.getRoi(roiCount++).setPosition(framenum);
 			} catch (Exception e) {
 				System.out.println("Had trouble measuring frame " + framenum + " :(");
 			}
@@ -568,14 +577,6 @@ public class SpindleLength implements PlugInFilter {
 			out.println(frames.get(i) + "," + lengthstrings.get(i));
 		}
 		out.close();
-		
-		
-		int roiCount = 0;
-		
-		for (int i = 0; i < frames.size(); i++) {
-			manager.getRoi(roiCount++).setPosition(frames.get(i));
-			manager.getRoi(roiCount++).setPosition(frames.get(i));
-		}
 		
 		Overlay displayList = new Overlay();
 		
