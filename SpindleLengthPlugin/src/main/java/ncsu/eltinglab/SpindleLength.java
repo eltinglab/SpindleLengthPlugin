@@ -550,7 +550,7 @@ public class SpindleLength implements PlugInFilter {
 
 		// set up progress bar
 		IJ.showProgress(0.0);
-		IJ.showMessage("Hold space bar to exit.");
+		IJ.showMessage("Need to exit?", "Hold the space bar to exit without saving anytime.");
 
 //		Dialog d = new Dialog(new Frame(), "Cancel?", false);
 //		d.setSize(50, 50);	
@@ -596,7 +596,6 @@ public class SpindleLength implements PlugInFilter {
 			
 			try {
 				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
-				
 				if (IJ.spaceBarDown()) {
 					System.exit(1);
 				}
