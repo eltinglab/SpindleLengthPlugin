@@ -59,5 +59,7 @@ r_squared = 1 - (ss_res / ss_tot)
 ## output r squared and length
 print(r_squared)
 print(np.abs(p[4]/p[2] - p[3]/p[2]))
+print(int(np.abs(p[4]/p[2])))
+print(int(np.abs(p[3]/p[2])))
 
 

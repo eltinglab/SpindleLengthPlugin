@@ -429,6 +429,8 @@ public class SpindleLength implements PlugInFilter {
 
 		double rsquared = 0.0;
 		double l = -1.0;
+		int oneend = 0;
+		int otherend = 0;
 		try {
 			Process p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString + " " + pivot);
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -436,6 +438,8 @@ public class SpindleLength implements PlugInFilter {
 			try {
 				rsquared = Double.valueOf(stdInput.readLine());
 	            l = Double.valueOf(stdInput.readLine());
+	            oneend = Integer.valueOf(stdInput.readLine());
+	            otherend = Integer.valueOf(stdInput.readLine());
 			} catch (Exception e) { // there was an error in the curve fitting
 				//do nothing
 			}
@@ -446,8 +450,32 @@ public class SpindleLength implements PlugInFilter {
 		}
 		System.out.println("R squared: " + rsquared);
 		System.out.println("Curve fit length: " + l);
+        System.out.println(oneend + " " + otherend);
+
 
 		// add red ROI circles on the ends of the spindle and add them to the ROI manager.
+
+		double deltax = Math.abs(pointsx.get(minindex) - pointsx.get(maxindex));
+		double deltay = Math.abs(pointsy.get(minindex) - pointsy.get(maxindex));
+
+		// calculate and return spindle length
+		double length = Math.sqrt(deltax * deltax + deltay * deltay);
+//		if (rsquared >= 0.8 && l < proc.getHeight() && l < proc.getWidth()) {
+//			return l;
+//		}
+
+		StringBuilder b = new StringBuilder("");
+		b.append((length) + ",");
+		if (rsquared >= 0.75 && l < proc.getHeight() && l < proc.getWidth()) {
+			minindex = oneend;
+			maxindex = otherend;
+			b.append((l) + ",");
+		} else {
+			b.append((length) + ",");
+		}
+		b.append((l));
+		
+		
 		Vector<Roi> displayList = new Vector<Roi>();
 		Roi circle = new OvalRoi(pointsx.get(minindex), pointsy.get(minindex), 5, 5);
 		circle.setFillColor(Color.RED);
@@ -460,24 +488,6 @@ public class SpindleLength implements PlugInFilter {
 		m.addRoi(circle);
 		m.addRoi(circle2);
 		
-		double deltax = Math.abs(pointsx.get(minindex) - pointsx.get(maxindex));
-		double deltay = Math.abs(pointsy.get(minindex) - pointsy.get(maxindex));
-
-		// calculate and return spindle length
-		double length = Math.sqrt(deltax * deltax + deltay * deltay);
-//		if (rsquared >= 0.8 && l < proc.getHeight() && l < proc.getWidth()) {
-//			return l;
-//		}
-		
-
-		StringBuilder b = new StringBuilder("");
-		b.append((length + 5) + ",");
-		if (rsquared >= 0.75 && l < proc.getHeight() && l < proc.getWidth()) {
-			b.append((l + 5) + ",");
-		} else {
-			b.append((length + 5) + ",");
-		}
-		b.append((l + 5));
 		return b.toString();
 
 	}
@@ -500,7 +510,7 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Stack.tif";
+		String imageName = "input/Stack2.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
@@ -513,9 +523,6 @@ public class SpindleLength implements PlugInFilter {
 		  System.exit(1);
 		}
 
-		
-		ImageStack empty = stack.createEmptyStack();
-		
 		RoiManager manager = new RoiManager();
 
 		
@@ -537,21 +544,21 @@ public class SpindleLength implements PlugInFilter {
 //				System.out.println("Length: " + length);
 				lengthstrings.add(getLength(frame, manager));
 				frames.add(framenum);
-				manager.getRoi(roiCount++).setPosition(framenum);
-				manager.getRoi(roiCount++).setPosition(framenum);
+				manager.getRoi(roiCount).setPosition(framenum);
+				roiCount++;
+				manager.getRoi(roiCount).setPosition(framenum);
+				roiCount++;
 			} catch (Exception e) {
 				System.out.println("Had trouble measuring frame " + framenum + " :(");
 			}
 			//lengths.add(length + 5);
-			
-			try {
-				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			ImagePlus copy = frame.duplicate();
-			//System.out.println("Roi:" + frame.getRoi().toString());
-			//empty.addSlice(copy.getProcessor());
+//			
+//			try {
+//				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+
 			frame.close(); // close image that is opened in the getLength() method
 		}
 		
@@ -584,14 +591,9 @@ public class SpindleLength implements PlugInFilter {
 			displayList.add(manager.getRoi(i));
 		}
 		
+		stack.killRoi();
 		stack.setOverlay(displayList);
-		
-		
-		//ImagePlus n = new ImagePlus("hello", empty);
-		
-		
-		
-		
+
 		IJ.runPlugIn(clazz.getName(), "");
 		stack.show(); // this outputs the whole stack that you can scroll through
 	}
