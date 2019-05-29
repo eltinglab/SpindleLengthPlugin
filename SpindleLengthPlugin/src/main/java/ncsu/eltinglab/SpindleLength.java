@@ -29,6 +29,7 @@ import ij.gui.GenericDialog;
 import ij.gui.ImageCanvas;
 import ij.gui.OvalRoi;
 import ij.gui.Overlay;
+import ij.gui.ProgressBar;
 import ij.gui.Roi;
 import ij.plugin.filter.PlugInFilter;
 import ij.plugin.frame.RoiManager;
@@ -511,6 +512,7 @@ public class SpindleLength implements PlugInFilter {
 		// start ImageJ
 		new ImageJ();
 
+
 		// open the image
 		String imageName = "input/Stack-1.tif";
 		ImagePlus stack = IJ.openImage(imageName);
@@ -525,6 +527,12 @@ public class SpindleLength implements PlugInFilter {
 		  System.exit(1);
 		}
 
+
+		//ProgressBar pb = 
+		IJ.showProgress(0.0);
+//		pb.setVisible(true);
+//		pb.show(0.5, true);
+		
 		RoiManager manager = new RoiManager();
 
 		
@@ -551,16 +559,18 @@ public class SpindleLength implements PlugInFilter {
 				roiCount++;
 				manager.getRoi(roiCount).setPosition(framenum);
 				roiCount++;
+				
 			} catch (Exception e) {
 				System.out.println("Had trouble measuring frame " + framenum + " :(");
 			}
-//			
-//			try {
-//				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
-
+			
+			try {
+				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			IJ.showProgress(framenum, stack.getStackSize());
+			//pb.show(framenum, stack.getStackSize());
 			frame.close(); // close image that is opened in the getLength() method
 		}
 		
