@@ -189,7 +189,8 @@ public class SpindleLength implements PlugInFilter {
 
 	public static double getLength(ImagePlus im, RoiManager m) {
 		
-		ImageProcessor proc = im.getProcessor();
+		ImagePlus im2 = im.duplicate();
+		ImageProcessor proc = im2.getProcessor();
 
 		
 		// normalize all images (with linear transformation) so they go from 0 to 65000
@@ -197,7 +198,7 @@ public class SpindleLength implements PlugInFilter {
 		double maximum = Integer.MIN_VALUE;
 		double minimum = Integer.MAX_VALUE;
 		
-		im.show();
+		//im.show();
 		
 		for (int i = 0; i < proc.getWidth(); i++) {
 			for (int j = 0; j < proc.getHeight(); j++) {
@@ -481,6 +482,7 @@ public class SpindleLength implements PlugInFilter {
 			length = l;
 		}
 		
+		im.show();
 		Vector<Roi> displayList = new Vector<Roi>();
 		Roi circle = new OvalRoi(pointsx.get(minindex), pointsy.get(minindex), 5, 5);
 		circle.setFillColor(Color.RED);
@@ -492,6 +494,7 @@ public class SpindleLength implements PlugInFilter {
 		c.setDisplayList(displayList);
 		m.addRoi(circle);
 		m.addRoi(circle2);
+		
 		
 		return length;
 
@@ -547,6 +550,7 @@ public class SpindleLength implements PlugInFilter {
 
 		// set up progress bar
 		IJ.showProgress(0.0);
+		IJ.showMessage("Hold space bar to exit.");
 
 //		Dialog d = new Dialog(new Frame(), "Cancel?", false);
 //		d.setSize(50, 50);	
@@ -555,6 +559,7 @@ public class SpindleLength implements PlugInFilter {
 //		c.setVisible(true);
 //		d.add(c);
 //		d.setVisible(true);
+		
 		
 		RoiManager manager = new RoiManager();
 
@@ -565,9 +570,12 @@ public class SpindleLength implements PlugInFilter {
 		
 		int roiCount = 0;
 		
+		ImagePlus frame = null;
+		
 		// go through all frames in the movie and record the spindle length in each one
 		for (int framenum = 1; framenum <= stack.getStackSize(); framenum++) {
-			ImagePlus frame = IJ.openImage(imageName, framenum);
+
+			frame = IJ.openImage(imageName, framenum);
 			//frame.show();
 			System.out.println("Frame number: " + framenum);
 			double length = -1.0; // the length will stay negative if the algorithm can't measure it
@@ -581,18 +589,21 @@ public class SpindleLength implements PlugInFilter {
 				roiCount++;
 				manager.getRoi(roiCount).setPosition(framenum);
 				roiCount++;
-				
+			
 			} catch (Exception e) {
 				System.out.println("Had trouble measuring frame " + framenum + " :(");
 			}
 			
 			try {
 				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
+				
+				if (IJ.spaceBarDown()) {
+					System.exit(1);
+				}
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 			IJ.showProgress(framenum, stack.getStackSize());
-			//pb.show(framenum, stack.getStackSize());
 			frame.close(); // close image that is opened in the getLength() method
 		}
 		
