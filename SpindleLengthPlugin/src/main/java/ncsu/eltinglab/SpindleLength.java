@@ -514,24 +514,22 @@ public class SpindleLength implements PlugInFilter {
 
 
 		// open the image
-		String imageName = "input/Stack-1.tif";
+		String imageName = "input/Cell1.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
 		GenericDialog gd = new GenericDialog("New Image");
 		String filename = "output/lengths.csv";
 		gd.addStringField("Enter file name", filename);
-		filename = gd.getNextString();
 		gd.showDialog();
+		filename = gd.getNextString();
+		System.out.println(filename);
+		
 		if (gd.wasCanceled()) {
 		  System.exit(1);
 		}
 
-
-		//ProgressBar pb = 
 		IJ.showProgress(0.0);
-//		pb.setVisible(true);
-//		pb.show(0.5, true);
 		
 		RoiManager manager = new RoiManager();
 
