@@ -8,9 +8,13 @@
 
 package ncsu.eltinglab;
 
+import java.awt.Button;
 import java.awt.Color;
-
-
+import java.awt.Component;
+import java.awt.Dialog;
+import java.awt.Dialog.ModalityType;
+import java.awt.Frame;
+import java.awt.Window;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -29,8 +33,8 @@ import ij.gui.GenericDialog;
 import ij.gui.ImageCanvas;
 import ij.gui.OvalRoi;
 import ij.gui.Overlay;
-import ij.gui.ProgressBar;
 import ij.gui.Roi;
+import ij.gui.WaitForUserDialog;
 import ij.plugin.filter.PlugInFilter;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
@@ -376,8 +380,6 @@ public class SpindleLength implements PlugInFilter {
 					intensity += (proc2.get((int)(x - minorx), (int) (y - minory)) / 1000);	
 					intensity += (proc2.get((int)(x + 2 * minorx), (int) (y + 2 * minory)) / 1000);
 					intensity += (proc2.get((int)(x - 2 * minorx), (int) (y - 2 * minory)) / 1000);	
-//					intensity += (proc2.get((int)(x + 3 * minorx), (int) (y + 3 * minory)) / 1000);
-//					intensity += (proc2.get((int)(x - 3 * minorx), (int) (y - 3 * minory)) / 1000);	
 				}
 			}
 			
@@ -518,22 +520,45 @@ public class SpindleLength implements PlugInFilter {
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
+		// prompts user for filename
 		GenericDialog gd = new GenericDialog("New Image");
 		String filename = "output/lengths.csv";
 		gd.addStringField("Enter file name", filename);
 		gd.showDialog();
 		filename = gd.getNextString();
-		System.out.println(filename);
-		
 		if (gd.wasCanceled()) {
 		  System.exit(1);
 		}
+		
+		
+		double factor = 0.0;
+		
+		GenericDialog askToScale = new GenericDialog("Scaling");
+		askToScale.addMessage("Would you like to scale your image?");
+		askToScale.setCancelLabel("No");
+		askToScale.setOKLabel("Yes");
+		askToScale.showDialog();
+		if (askToScale.wasOKed()) {
+			GenericDialog scale = new GenericDialog("New Image");
+			scale.addNumericField("microns/pixel?", 00.00, 4);
+			scale.setCancelLabel("Get value in pixels");
+			scale.showDialog();
+			factor = scale.getNextNumber();
+		}
 
+		// set up progress bar
 		IJ.showProgress(0.0);
+
+//		Dialog d = new Dialog(new Frame(), "Cancel?", false);
+//		d.setSize(50, 50);	
+//		Button c = new Button("Click here to cancel.");
+//		c.setSize(20, 30);
+//		c.setVisible(true);
+//		d.add(c);
+//		d.setVisible(true);
 		
 		RoiManager manager = new RoiManager();
 
-		
 		ArrayList<Double> lengths = new ArrayList<Double>();
 		//ArrayList<String> lengthstrings = new ArrayList<String>();
 
@@ -589,6 +614,13 @@ public class SpindleLength implements PlugInFilter {
 //		for (int i = 0; i < manager.getCount(); i++) {
 //			out.println(((i / 2) + 1) + "," + manager.getRoi(i).getXBase() + " , " + manager.getRoi(i).getYBase());
 //		}
+		
+		if (factor != 0) {
+			for (double y : lengths) {
+				y *= factor;
+			}
+		}
+		
 		
 		for (int i = 0; i < frames.size(); i++) {
 			out.println(frames.get(i) + "," + lengths.get(i));
