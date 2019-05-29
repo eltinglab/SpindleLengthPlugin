@@ -182,7 +182,7 @@ public class SpindleLength implements PlugInFilter {
 		);
 	}
 
-	public static String getLength(ImagePlus im, RoiManager m) {
+	public static double getLength(ImagePlus im, RoiManager m) {
 		
 		ImageProcessor proc = im.getProcessor();
 
@@ -460,21 +460,23 @@ public class SpindleLength implements PlugInFilter {
 
 		// calculate and return spindle length
 		double length = Math.sqrt(deltax * deltax + deltay * deltay);
-//		if (rsquared >= 0.8 && l < proc.getHeight() && l < proc.getWidth()) {
-//			return l;
+		
+//		StringBuilder b = new StringBuilder("");
+//		b.append((length) + ",");
+//		if (rsquared >= 0.75 && l < proc.getHeight() && l < proc.getWidth()) {
+//			minindex = oneend;
+//			maxindex = otherend;
+//			b.append((l) + ",");
+//		} else {
+//			b.append((length) + ",");
 //		}
-
-		StringBuilder b = new StringBuilder("");
-		b.append((length) + ",");
+//		b.append((l));
+		
 		if (rsquared >= 0.75 && l < proc.getHeight() && l < proc.getWidth()) {
 			minindex = oneend;
 			maxindex = otherend;
-			b.append((l) + ",");
-		} else {
-			b.append((length) + ",");
+			length = l;
 		}
-		b.append((l));
-		
 		
 		Vector<Roi> displayList = new Vector<Roi>();
 		Roi circle = new OvalRoi(pointsx.get(minindex), pointsy.get(minindex), 5, 5);
@@ -488,7 +490,7 @@ public class SpindleLength implements PlugInFilter {
 		m.addRoi(circle);
 		m.addRoi(circle2);
 		
-		return b.toString();
+		return length;
 
 	}
 	/**
@@ -510,7 +512,7 @@ public class SpindleLength implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Stack2.tif";
+		String imageName = "input/Stack-1.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
@@ -527,7 +529,7 @@ public class SpindleLength implements PlugInFilter {
 
 		
 		ArrayList<Double> lengths = new ArrayList<Double>();
-		ArrayList<String> lengthstrings = new ArrayList<String>();
+		//ArrayList<String> lengthstrings = new ArrayList<String>();
 
 		ArrayList<Integer> frames = new ArrayList<Integer>();
 		
@@ -538,12 +540,13 @@ public class SpindleLength implements PlugInFilter {
 			ImagePlus frame = IJ.openImage(imageName, framenum);
 			//frame.show();
 			System.out.println("Frame number: " + framenum);
-			//double length = -1; // the length will stay negative if the algorithm can't measure it
+			double length = -1.0; // the length will stay negative if the algorithm can't measure it
 			try {
-//				length = getLength(frame, manager);
+				length = getLength(frame, manager);
 //				System.out.println("Length: " + length);
-				lengthstrings.add(getLength(frame, manager));
+				//lengthstrings.add(getLength(frame, manager));
 				frames.add(framenum);
+				lengths.add(length);
 				manager.getRoi(roiCount).setPosition(framenum);
 				roiCount++;
 				manager.getRoi(roiCount).setPosition(framenum);
@@ -551,7 +554,6 @@ public class SpindleLength implements PlugInFilter {
 			} catch (Exception e) {
 				System.out.println("Had trouble measuring frame " + framenum + " :(");
 			}
-			//lengths.add(length + 5);
 //			
 //			try {
 //				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
@@ -581,7 +583,7 @@ public class SpindleLength implements PlugInFilter {
 //		}
 		
 		for (int i = 0; i < frames.size(); i++) {
-			out.println(frames.get(i) + "," + lengthstrings.get(i));
+			out.println(frames.get(i) + "," + lengths.get(i));
 		}
 		out.close();
 		
