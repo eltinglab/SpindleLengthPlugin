@@ -521,7 +521,7 @@ public class SpindleLength implements PlugInFilter {
 		System.out.println("Stack size: " + stack.getStackSize());
 
 		// prompts user for filename
-		GenericDialog gd = new GenericDialog("New Image");
+		GenericDialog gd = new GenericDialog("Enter file name");
 		String filename = "output/lengths.csv";
 		gd.addStringField("Enter file name", filename);
 		gd.showDialog();
@@ -530,9 +530,8 @@ public class SpindleLength implements PlugInFilter {
 		  System.exit(1);
 		}
 		
-		
+		// asks about scaling
 		double factor = 0.0;
-		
 		GenericDialog askToScale = new GenericDialog("Scaling");
 		askToScale.addMessage("Would you like to scale your image?");
 		askToScale.setCancelLabel("No");
@@ -540,7 +539,7 @@ public class SpindleLength implements PlugInFilter {
 		askToScale.showDialog();
 		if (askToScale.wasOKed()) {
 			GenericDialog scale = new GenericDialog("New Image");
-			scale.addNumericField("microns/pixel?", 00.00, 4);
+			scale.addNumericField("pixels/micron?", 00.00, 4);
 			scale.setCancelLabel("Get value in pixels");
 			scale.showDialog();
 			factor = scale.getNextNumber();
@@ -616,11 +615,11 @@ public class SpindleLength implements PlugInFilter {
 //		}
 		
 		if (factor != 0) {
-			for (double y : lengths) {
-				y *= factor;
+			for (int i = 0; i < lengths.size(); i++) {
+				double old = lengths.get(i);
+				lengths.set(i, old / factor);
 			}
 		}
-		
 		
 		for (int i = 0; i < frames.size(); i++) {
 			out.println(frames.get(i) + "," + lengths.get(i));
