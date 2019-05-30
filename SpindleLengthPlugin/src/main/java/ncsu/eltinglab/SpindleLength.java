@@ -187,7 +187,7 @@ public class SpindleLength implements PlugInFilter {
 		);
 	}
 
-	public static double getLength(ImagePlus im, RoiManager m) {
+	public static double getLength(ImagePlus im, RoiManager m, double progress) {
 		
 		ImagePlus im2 = im.duplicate();
 		ImageProcessor proc = im2.getProcessor();
@@ -276,18 +276,21 @@ public class SpindleLength implements PlugInFilter {
 		}
 		
 		// checks for isolated random bright pixels and sets them to zero
-		for (int i = 0; i < proc.getWidth() - 1; i++) {
-			for (int j = 0; j < proc.getHeight() - 1; j++) {
-				if (proc.get(i, j) != 0 ) {
-					if (proc.get(i, j + 1) == 0 && proc.get(i, j - 1) == 0) {
-						if (proc.get(i + 1, j) == 0 && proc.get(i - 1, j) == 0) {
-							proc.set(i, j, 0);
+		if (progress < 0.8) {
+			for (int i = 0; i < proc.getWidth() - 1; i++) {
+				for (int j = 0; j < proc.getHeight() - 1; j++) {
+					if (proc.get(i, j) != 0 ) {
+						if (proc.get(i, j + 1) == 0 && proc.get(i, j - 1) == 0) {
+							if (proc.get(i + 1, j) == 0 && proc.get(i - 1, j) == 0) {
+								proc.set(i, j, 0);
+							}
 						}
 					}
+					
 				}
-				
 			}
 		}
+				
 		
 		//im.show();
 		// calculates center of mass coordinates
@@ -495,7 +498,6 @@ public class SpindleLength implements PlugInFilter {
 		m.addRoi(circle);
 		m.addRoi(circle2);
 		
-		
 		return length;
 
 	}
@@ -519,10 +521,11 @@ public class SpindleLength implements PlugInFilter {
 
 
 		// open the image
-		String imageName = "input/Cell1.tif";
+		String imageName = "input/Stack.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
+		
 		// prompts user for filename
 		GenericDialog gd = new GenericDialog("Enter file name");
 		String filename = "output/lengths.csv";
@@ -549,7 +552,8 @@ public class SpindleLength implements PlugInFilter {
 		}
 
 		// set up progress bar
-		IJ.showProgress(0.0);
+		double progress = 0.0;
+		IJ.showProgress(progress);
 		IJ.showMessage("Need to exit?", "Hold the the escape key to exit without saving anytime.");
 		
 		
@@ -581,7 +585,8 @@ public class SpindleLength implements PlugInFilter {
 			System.out.println("Frame number: " + framenum);
 			double length = -1.0; // the length will stay negative if the algorithm can't measure it
 			try {
-				length = getLength(frame, manager);
+				progress = (double) framenum / (double) stack.getStackSize();
+				length = getLength(frame, manager, progress);
 //				System.out.println("Length: " + length);
 				//lengthstrings.add(getLength(frame, manager));
 				frames.add(framenum);
@@ -620,11 +625,6 @@ public class SpindleLength implements PlugInFilter {
 
 		System.out.println(manager.getCount());
 		
-//		out.println("Frame number , x position, y position");
-//		for (int i = 0; i < manager.getCount(); i++) {
-//			out.println(((i / 2) + 1) + "," + manager.getRoi(i).getXBase() + " , " + manager.getRoi(i).getYBase());
-//		}
-		
 		if (factor != 0) {
 			for (int i = 0; i < lengths.size(); i++) {
 				double old = lengths.get(i);
@@ -632,8 +632,20 @@ public class SpindleLength implements PlugInFilter {
 			}
 		}
 		
+		out.println("Frame number , x1, y1, x2, y2, length");
+		roiCount = 0;
+//		for (int i = 0; i < manager.getCount(); i++) {
+//			out.println(((i / 2) + 1) + "," + manager.getRoi(i).getXBase() + " , " + manager.getRoi(i).getYBase());
+//		}
+//		
+//		
+		
 		for (int i = 0; i < frames.size(); i++) {
-			out.println(frames.get(i) + "," + lengths.get(i));
+			out.println(frames.get(i) + "," + manager.getRoi(roiCount).getXBase() + "," +
+					manager.getRoi(roiCount).getYBase() + "," + manager.getRoi(roiCount + 1).getXBase() + 
+					"," + manager.getRoi(roiCount + 1).getYBase() + "," + lengths.get(i));
+			roiCount += 2;
+		
 		}
 		out.close();
 		
