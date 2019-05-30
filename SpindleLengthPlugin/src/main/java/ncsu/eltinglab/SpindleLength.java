@@ -8,13 +8,7 @@
 
 package ncsu.eltinglab;
 
-import java.awt.Button;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dialog;
-import java.awt.Dialog.ModalityType;
-import java.awt.Frame;
-import java.awt.Window;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,13 +22,11 @@ import java.util.concurrent.TimeUnit;
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
-import ij.ImageStack;
 import ij.gui.GenericDialog;
 import ij.gui.ImageCanvas;
 import ij.gui.OvalRoi;
 import ij.gui.Overlay;
 import ij.gui.Roi;
-import ij.gui.WaitForUserDialog;
 import ij.plugin.filter.PlugInFilter;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
@@ -214,8 +206,6 @@ public class SpindleLength implements PlugInFilter {
 		
 		System.out.println("maximum: " + maximum);
 		System.out.println("maximum: " + minimum);
-
-
 		
 		double slope = 65000.0 / (maximum - minimum);
 		double intercept = -1 * slope * minimum;
@@ -223,17 +213,14 @@ public class SpindleLength implements PlugInFilter {
 		for (int i = 0; i < proc.getWidth(); i++) {
 			for (int j = 0; j < proc.getHeight(); j++) {
 				int old = proc.get(i,j);
-				double n = slope * old + intercept;
-//				if (old > 150) {
-//					System.out.println(old + ", " + (int) n);
-//				}
-//				
+				double n = slope * old + intercept;	
 				proc.set(i, j, (int) n);
 			}
 		}
 		
 		
-		ImageProcessor proc2 = proc.duplicate();
+		ImageProcessor proc2 = proc.duplicate(); // keep a copy of the original for later
+		
 		// Making a giant comma-separated list of pixel values to pass into the 
 		// Python script as a fake command line argument
 		StringBuilder pixelString = new StringBuilder("");
@@ -263,7 +250,7 @@ public class SpindleLength implements PlugInFilter {
 		}
 		thresh = Double.valueOf(s2);
 		
-		 System.out.println("threshold: " + thresh);
+		System.out.println("threshold: " + thresh);
 		
 		// sets all pixels below the threshold to zero intensity
 		
@@ -302,7 +289,6 @@ public class SpindleLength implements PlugInFilter {
 				mass += proc.get(i, j);
 				xsum += proc.get(i, j) * i;
 				ysum += proc.get(i, j) * j;
-				//System.out.println("hello");
 			}
 		}
 		
@@ -354,18 +340,19 @@ public class SpindleLength implements PlugInFilter {
 			y += yvector;
 		}
 
-		double bottomx = x;
-		double bottomy = y;
-		
-		System.out.println("bottomx: " + bottomx);
-		System.out.println("bottomy: " + bottomy);
+//		double bottomx = x;
+//		double bottomy = y;
+//		
+//		System.out.println("bottomx: " + bottomx);
+//		System.out.println("bottomy: " + bottomy);
 		
 		ArrayList<Integer> intensities = new ArrayList<Integer>();
 		ArrayList<Integer> intensities_integrate = new ArrayList<Integer>();
 		ArrayList<Integer> indexes = new ArrayList<Integer>();
 		ArrayList<Double> pointsx = new ArrayList<Double>();
 		ArrayList<Double> pointsy = new ArrayList<Double>();
-		// iterates over pixels in line through spindle across the frame, adding them to above arrays
+		// iterates over pixels in line through spindle across the frame, integrates over a 
+		// width of two spindles, adding intensities to above arrays
 		int index = 0;
 		int pivot = 0;
 		do {
@@ -455,30 +442,18 @@ public class SpindleLength implements PlugInFilter {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
 		System.out.println("R squared: " + rsquared);
 		System.out.println("Curve fit length: " + l);
         System.out.println(oneend + " " + otherend);
 
-
-		// add red ROI circles on the ends of the spindle and add them to the ROI manager.
-
+		// calculate spindle length
+        // uses curve fit length only if r squared is greater than 0.75
 		double deltax = Math.abs(pointsx.get(minindex) - pointsx.get(maxindex));
 		double deltay = Math.abs(pointsy.get(minindex) - pointsy.get(maxindex));
 
-		// calculate and return spindle length
 		double length = Math.sqrt(deltax * deltax + deltay * deltay);
-		
-//		StringBuilder b = new StringBuilder("");
-//		b.append((length) + ",");
-//		if (rsquared >= 0.75 && l < proc.getHeight() && l < proc.getWidth()) {
-//			minindex = oneend;
-//			maxindex = otherend;
-//			b.append((l) + ",");
-//		} else {
-//			b.append((length) + ",");
-//		}
-//		b.append((l));
-		
+
 		if (rsquared >= 0.75 && l < proc.getHeight() && l < proc.getWidth()) {
 			minindex = oneend;
 			maxindex = otherend;
@@ -486,6 +461,8 @@ public class SpindleLength implements PlugInFilter {
 		}
 		
 		im.show();
+		
+		// add red ROI circles on the ends of the spindle and add them to the ROI manager.
 		Vector<Roi> displayList = new Vector<Roi>();
 		Roi circle = new OvalRoi(pointsx.get(minindex), pointsy.get(minindex), 5, 5);
 		circle.setFillColor(Color.RED);
@@ -536,7 +513,7 @@ public class SpindleLength implements PlugInFilter {
 		  System.exit(1);
 		}
 		
-		// asks about scaling
+		// asks about scaling, records factor if user specifies one
 		double factor = 0.0;
 		GenericDialog askToScale = new GenericDialog("Scaling");
 		askToScale.addMessage("Would you like to scale your image?");
@@ -556,25 +533,11 @@ public class SpindleLength implements PlugInFilter {
 		IJ.showProgress(progress);
 		IJ.showMessage("Need to exit?", "Hold the the escape key to exit without saving anytime.");
 		
-		
-//		Dialog d = new Dialog(new Frame(), "Cancel?", false);
-//		d.setSize(50, 50);	
-//		Button c = new Button("Click here to cancel.");
-//		c.setSize(20, 30);
-//		c.setVisible(true);
-//		d.add(c);
-//		d.setVisible(true);
-		
-		
+		// analyze images
 		RoiManager manager = new RoiManager();
-
 		ArrayList<Double> lengths = new ArrayList<Double>();
-		//ArrayList<String> lengthstrings = new ArrayList<String>();
-
 		ArrayList<Integer> frames = new ArrayList<Integer>();
-		
 		int roiCount = 0;
-		
 		ImagePlus frame = null;
 		
 		// go through all frames in the movie and record the spindle length in each one
@@ -588,7 +551,6 @@ public class SpindleLength implements PlugInFilter {
 				progress = (double) framenum / (double) stack.getStackSize();
 				length = getLength(frame, manager, progress);
 //				System.out.println("Length: " + length);
-				//lengthstrings.add(getLength(frame, manager));
 				frames.add(framenum);
 				lengths.add(length);
 				manager.getRoi(roiCount).setPosition(framenum);
@@ -612,9 +574,18 @@ public class SpindleLength implements PlugInFilter {
 			frame.close(); // close image that is opened in the getLength() method
 		}
 		
-		// wait for people to update the ROIs if they need to
 		
-		// write data to output file here
+		// scale lengths if necessary
+		if (factor != 0) {
+			for (int i = 0; i < lengths.size(); i++) {
+				double old = lengths.get(i);
+				lengths.set(i, old / factor);
+			}
+		}
+		
+		
+		
+		// write data to csv output file here
 		File f = new File(filename);
 		PrintStream out = null;
 		try {
@@ -623,23 +594,9 @@ public class SpindleLength implements PlugInFilter {
 			e.printStackTrace();
 		}
 
-		System.out.println(manager.getCount());
-		
-		if (factor != 0) {
-			for (int i = 0; i < lengths.size(); i++) {
-				double old = lengths.get(i);
-				lengths.set(i, old / factor);
-			}
-		}
-		
 		out.println("Frame number , x1, y1, x2, y2, length");
 		roiCount = 0;
-//		for (int i = 0; i < manager.getCount(); i++) {
-//			out.println(((i / 2) + 1) + "," + manager.getRoi(i).getXBase() + " , " + manager.getRoi(i).getYBase());
-//		}
-//		
-//		
-		
+
 		for (int i = 0; i < frames.size(); i++) {
 			out.println(frames.get(i) + "," + manager.getRoi(roiCount).getXBase() + "," +
 					manager.getRoi(roiCount).getYBase() + "," + manager.getRoi(roiCount + 1).getXBase() + 
@@ -649,16 +606,25 @@ public class SpindleLength implements PlugInFilter {
 		}
 		out.close();
 		
+		
+		// build stack with ROIs overlaid on it
 		Overlay displayList = new Overlay();
 		
 		for (int i = 0; i < manager.getCount(); i++) {
 			displayList.add(manager.getRoi(i));
 		}
 		
-		stack.killRoi();
 		stack.setOverlay(displayList);
 
 		IJ.runPlugIn(clazz.getName(), "");
 		stack.show(); // this outputs the whole stack that you can scroll through
+		
+		// wait for people to update the ROIs if they need to
+//		GenericDialog waitForROI= new GenericDialog("Scaling");
+//		waitForROI.addMessage("Now's your chance to fix things");
+//		waitForROI.hideCancelButton();
+//		waitForROI.showDialog();
+//		
+				
 	}
 }
