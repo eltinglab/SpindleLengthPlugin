@@ -498,15 +498,19 @@ public class SpindleLength implements PlugInFilter {
 
 
 		// open the image
-		String imageName = "input/Stack.tif";
+		//String imageName = "input/Stack.tif";
+		IJ.showMessage("Select an input file");
+		String imageName = IJ.getFilePath("Select input file: ");
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 
 		
 		// prompts user for filename
-		GenericDialog gd = new GenericDialog("Enter file name");
+		
+		
+		GenericDialog gd = new GenericDialog("Enter file name to save output.");
 		String filename = "output/lengths.csv";
-		gd.addStringField("Enter file name", filename);
+		gd.addStringField("Enter output file name", filename);
 		gd.showDialog();
 		filename = gd.getNextString();
 		if (gd.wasCanceled()) {
@@ -609,6 +613,7 @@ public class SpindleLength implements PlugInFilter {
 		
 		// build stack with ROIs overlaid on it
 		Overlay displayList = new Overlay();
+		displayList.drawLabels(false);
 		
 		for (int i = 0; i < manager.getCount(); i++) {
 			displayList.add(manager.getRoi(i));
