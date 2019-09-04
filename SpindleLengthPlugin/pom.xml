@@ -13,10 +13,10 @@
 	</parent>
 
 	<groupId>ncsu.eltinglab</groupId>
-	<artifactId>SpindleLengthPlugin</artifactId>
+	<artifactId>SpindleLength_Plugin</artifactId>
 	<version>0.1.0-SNAPSHOT</version>
 
-	<name>Spindle Length</name>
+	<name>Spindle_Length</name>
 	<description>Detects and measures mitotic spindles.</description>
 	<url>https://physics.ncsu.edu/eltinglab/</url>
 	<inceptionYear>2019</inceptionYear>
