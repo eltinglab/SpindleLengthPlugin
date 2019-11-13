@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.gui.GenericDialog;
 import ij.gui.ImageCanvas;
 import ij.gui.OvalRoi;
@@ -74,12 +75,18 @@ public class Spindle_Length implements PlugInFilter {
 //		
 		 //open the image
 		//String imageName = "input/Stack.tif";
-		IJ.showMessage("Select an input file");
-		String imageName = IJ.getFilePath("Select input file: ");
-		ImagePlus stack = IJ.openImage(imageName);
-		System.out.println("Stack size: " + stack.getStackSize());
+		//IJ.showMessage("Select an input file");
+		//String imageName = IJ.getFilePath("Select input file: ");
+		//ImagePlus stack = IJ.openImage(imageName);
+		//System.out.println("Stack size: " + stack.getStackSize());
 
+		//ImagePlus stack = IJ.getImage();
+		ImageStack stack = IJ.getImage().getImageStack();
 		
+		System.out.println("Working Directory = " + System.getProperty("user.dir"));
+		
+		
+		//String imagename = IJ.getFilePath(dialogTitle);
 		// prompts user for filename
 		
 		
@@ -120,14 +127,15 @@ public class Spindle_Length implements PlugInFilter {
 		ImagePlus frame = null;
 		
 		// go through all frames in the movie and record the spindle length in each one
-		for (int framenum = 1; framenum <= stack.getStackSize(); framenum++) {
+		for (int framenum = 1; framenum <= stack.getSize(); framenum++) {
 
-			frame = IJ.openImage(imageName, framenum);
+			//frame = IJ.openImage(imageName, framenum);
+			frame = new ImagePlus("Frame " + framenum, stack.getProcessor(framenum));
 			frame.show();
 			System.out.println("Frame number: " + framenum);
 			double length = -1.0; // the length will stay negative if the algorithm can't measure it
 			try {
-				progress = (double) framenum / (double) stack.getStackSize();
+				progress = (double) framenum / (double) stack.getSize();
 				length = getLength(frame, manager, progress);
 //				System.out.println("Length: " + length);
 				frames.add(framenum);
@@ -149,7 +157,7 @@ public class Spindle_Length implements PlugInFilter {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			IJ.showProgress(framenum, stack.getStackSize());
+			IJ.showProgress(framenum, stack.getSize());
 			frame.close(); // close image that is opened in the getLength() method
 		}
 		
@@ -165,7 +173,9 @@ public class Spindle_Length implements PlugInFilter {
 		
 		
 		// write data to csv output file here
-		File f = new File("/Users/anasofiauzsoy/Desktop/" + filename);
+		//File f = new File("/Users/anasofiauzsoy/Desktop/" + filename);
+		File f = new File(filename);
+
 		PrintStream out = null;
 		try {
 			out = new PrintStream(f);
@@ -194,8 +204,10 @@ public class Spindle_Length implements PlugInFilter {
 			displayList.add(manager.getRoi(i));
 		}
 		
-		stack.setOverlay(displayList);
-		stack.show();
+		ImagePlus back = new ImagePlus("Full Stack", stack);
+		
+		back.setOverlay(displayList);
+		back.show();
 		
 	}
 
@@ -344,8 +356,7 @@ public class Spindle_Length implements PlugInFilter {
 			}
 		}
 //		
-//		 System.out.println("Working Directory = " +
-//	              System.getProperty("user.dir"));
+		System.out.println("Working Directory = " + System.getProperty("user.dir"));
 //		
 //		Process q = null;
 //		try {
@@ -382,7 +393,7 @@ public class Spindle_Length implements PlugInFilter {
 		double thresh = 0.0;
 		System.out.println(pixelString.length());
 		try {
-			Process p = Runtime.getRuntime().exec("python /Users/anasofiauzsoy/git/SpindleLengthPlugin/SpindleLengthPlugin/SpindleLengthPlugin/python/newinterpolation.py " + pixelString);
+			Process p = Runtime.getRuntime().exec("python python/newinterpolation.py " + pixelString);
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			//System.out.println(stdInput.readLine());
 			while ((s1 = stdInput.readLine()) != null) {
@@ -463,7 +474,7 @@ public class Spindle_Length implements PlugInFilter {
 		double minorx = 1.0;
 		double minory = 1.0;
 		try {
-			Process p = Runtime.getRuntime().exec("python /Users/anasofiauzsoy/git/SpindleLengthPlugin/SpindleLengthPlugin/SpindleLengthPlugin/python/lazylinalg.py " + matrixString);
+			Process p = Runtime.getRuntime().exec("python python/lazylinalg.py " + matrixString);
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
             xvector = Double.valueOf(stdInput.readLine());
             yvector = Double.valueOf(stdInput.readLine());
@@ -573,7 +584,7 @@ public class Spindle_Length implements PlugInFilter {
 		int oneend = 0;
 		int otherend = 0;
 		try {
-			Process p = Runtime.getRuntime().exec("python /Users/anasofiauzsoy/git/SpindleLengthPlugin/SpindleLengthPlugin/SpindleLengthPlugin/python/curvefit2.py " + indexString + " " + intenseString + " " + pivot);
+			Process p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString + " " + pivot);
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
             //System.out.println(stdInput.readLine());
 			try {
@@ -647,129 +658,129 @@ public class Spindle_Length implements PlugInFilter {
 		// start ImageJ
 		new ImageJ();
 //
-//		// open the image
-//		//String imageName = "input/Stack.tif";
-//		IJ.showMessage("Select an input file");
-//		String imageName = IJ.getFilePath("Select input file: ");
-//		ImagePlus stack = IJ.openImage(imageName);
-//		System.out.println("Stack size: " + stack.getStackSize());
+		// open the image
+		String imageName = "input/Stack.tif";
+		IJ.showMessage("Select an input file");
+		//String imageName = IJ.getFilePath("Select input file: ");
+		ImagePlus stack = IJ.openImage(imageName);
+		System.out.println("Stack size: " + stack.getStackSize());
 
-//		
-//		// prompts user for filename
-//		
-//		
-//		GenericDialog gd = new GenericDialog("Enter file name to save output.");
-//		String filename = "output/lengths.csv";
-//		gd.addStringField("Enter output file name", filename);
-//		gd.showDialog();
-//		filename = gd.getNextString();
-//		if (gd.wasCanceled()) {
-//		  System.exit(1);
-//		}
-//		
-//		// asks about scaling, records factor if user specifies one
-//		double factor = 0.0;
-//		GenericDialog askToScale = new GenericDialog("Scaling");
-//		askToScale.addMessage("Would you like to scale your image?");
-//		askToScale.setCancelLabel("No");
-//		askToScale.setOKLabel("Yes");
-//		askToScale.showDialog();
-//		if (askToScale.wasOKed()) {
-//			GenericDialog scale = new GenericDialog("New Image");
-//			scale.addNumericField("pixels/micron?", 00.00, 4);
-//			scale.setCancelLabel("Get value in pixels");
-//			scale.showDialog();
-//			factor = scale.getNextNumber();
-//		}
-//
-//		// set up progress bar
-//		double progress = 0.0;
-//		IJ.showProgress(progress);
-//		IJ.showMessage("Need to exit?", "Hold the the escape key to exit without saving anytime.");
-//		
-//		// analyze images
-//		RoiManager manager = new RoiManager();
-//		ArrayList<Double> lengths = new ArrayList<Double>();
-//		ArrayList<Integer> frames = new ArrayList<Integer>();
-//		int roiCount = 0;
-//		ImagePlus frame = null;
-//		
-//		// go through all frames in the movie and record the spindle length in each one
-//		for (int framenum = 1; framenum <= stack.getStackSize(); framenum++) {
-//
-//			frame = IJ.openImage(imageName, framenum);
-//			//frame.show();
-//			System.out.println("Frame number: " + framenum);
-//			double length = -1.0; // the length will stay negative if the algorithm can't measure it
-//			try {
-//				progress = (double) framenum / (double) stack.getStackSize();
-//				length = getLength(frame, manager, progress);
-////				System.out.println("Length: " + length);
-//				frames.add(framenum);
-//				lengths.add(length);
-//				manager.getRoi(roiCount).setPosition(framenum);
-//				roiCount++;
-//				manager.getRoi(roiCount).setPosition(framenum);
-//				roiCount++;
-//			
-//			} catch (Exception e) {
-//				System.out.println("Had trouble measuring frame " + framenum + " :(");
-//			}
-//			
-//			try {
-//				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
-//				if (IJ.escapePressed()) {
-//					System.exit(1);
-//				}
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
-//			IJ.showProgress(framenum, stack.getStackSize());
-//			frame.close(); // close image that is opened in the getLength() method
-//		}
-//		
-//		
-//		// scale lengths if necessary
-//		if (factor != 0) {
-//			for (int i = 0; i < lengths.size(); i++) {
-//				double old = lengths.get(i);
-//				lengths.set(i, old / factor);
-//			}
-//		}
-//		
-//		
-//		
-//		// write data to csv output file here
-//		File f = new File(filename);
-//		PrintStream out = null;
-//		try {
-//			out = new PrintStream(f);
-//		} catch (FileNotFoundException e) {
-//			e.printStackTrace();
-//		}
-//
-//		out.println("Frame number , x1, y1, x2, y2, length");
-//		roiCount = 0;
-//
-//		for (int i = 0; i < frames.size(); i++) {
-//			out.println(frames.get(i) + "," + manager.getRoi(roiCount).getXBase() + "," +
-//					manager.getRoi(roiCount).getYBase() + "," + manager.getRoi(roiCount + 1).getXBase() + 
-//					"," + manager.getRoi(roiCount + 1).getYBase() + "," + lengths.get(i));
-//			roiCount += 2;
-//		
-//		}
-//		out.close();
-//		
-//		
-//		// build stack with ROIs overlaid on it
-//		Overlay displayList = new Overlay();
-//		displayList.drawLabels(false);
-//		
-//		for (int i = 0; i < manager.getCount(); i++) {
-//			displayList.add(manager.getRoi(i));
-//		}
-//		
-//		stack.setOverlay(displayList);
+		
+		// prompts user for filename
+		
+		
+		GenericDialog gd = new GenericDialog("Enter file name to save output.");
+		String filename = "output/lengths.csv";
+		gd.addStringField("Enter output file name", filename);
+		gd.showDialog();
+		filename = gd.getNextString();
+		if (gd.wasCanceled()) {
+		  System.exit(1);
+		}
+		
+		// asks about scaling, records factor if user specifies one
+		double factor = 0.0;
+		GenericDialog askToScale = new GenericDialog("Scaling");
+		askToScale.addMessage("Would you like to scale your image?");
+		askToScale.setCancelLabel("No");
+		askToScale.setOKLabel("Yes");
+		askToScale.showDialog();
+		if (askToScale.wasOKed()) {
+			GenericDialog scale = new GenericDialog("New Image");
+			scale.addNumericField("pixels/micron?", 00.00, 4);
+			scale.setCancelLabel("Get value in pixels");
+			scale.showDialog();
+			factor = scale.getNextNumber();
+		}
+
+		// set up progress bar
+		double progress = 0.0;
+		IJ.showProgress(progress);
+		IJ.showMessage("Need to exit?", "Hold the the escape key to exit without saving anytime.");
+		
+		// analyze images
+		RoiManager manager = new RoiManager();
+		ArrayList<Double> lengths = new ArrayList<Double>();
+		ArrayList<Integer> frames = new ArrayList<Integer>();
+		int roiCount = 0;
+		ImagePlus frame = null;
+		
+		// go through all frames in the movie and record the spindle length in each one
+		for (int framenum = 1; framenum <= stack.getStackSize(); framenum++) {
+
+			frame = IJ.openImage(imageName, framenum);
+			//frame.show();
+			System.out.println("Frame number: " + framenum);
+			double length = -1.0; // the length will stay negative if the algorithm can't measure it
+			try {
+				progress = (double) framenum / (double) stack.getStackSize();
+				length = getLength(frame, manager, progress);
+//				System.out.println("Length: " + length);
+				frames.add(framenum);
+				lengths.add(length);
+				manager.getRoi(roiCount).setPosition(framenum);
+				roiCount++;
+				manager.getRoi(roiCount).setPosition(framenum);
+				roiCount++;
+			
+			} catch (Exception e) {
+				System.out.println("Had trouble measuring frame " + framenum + " :(");
+			}
+			
+			try {
+				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
+				if (IJ.escapePressed()) {
+					System.exit(1);
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			IJ.showProgress(framenum, stack.getStackSize());
+			frame.close(); // close image that is opened in the getLength() method
+		}
+		
+		
+		// scale lengths if necessary
+		if (factor != 0) {
+			for (int i = 0; i < lengths.size(); i++) {
+				double old = lengths.get(i);
+				lengths.set(i, old / factor);
+			}
+		}
+		
+		
+		
+		// write data to csv output file here
+		File f = new File(filename);
+		PrintStream out = null;
+		try {
+			out = new PrintStream(f);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		out.println("Frame number , x1, y1, x2, y2, length");
+		roiCount = 0;
+
+		for (int i = 0; i < frames.size(); i++) {
+			out.println(frames.get(i) + "," + manager.getRoi(roiCount).getXBase() + "," +
+					manager.getRoi(roiCount).getYBase() + "," + manager.getRoi(roiCount + 1).getXBase() + 
+					"," + manager.getRoi(roiCount + 1).getYBase() + "," + lengths.get(i));
+			roiCount += 2;
+		
+		}
+		out.close();
+		
+		
+		// build stack with ROIs overlaid on it
+		Overlay displayList = new Overlay();
+		displayList.drawLabels(false);
+		
+		for (int i = 0; i < manager.getCount(); i++) {
+			displayList.add(manager.getRoi(i));
+		}
+		
+		stack.setOverlay(displayList);
 
 		IJ.runPlugIn(clazz.getName(), "");
 		//stack.show(); // this outputs the whole stack that you can scroll through
