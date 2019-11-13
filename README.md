@@ -1,9 +1,9 @@
 # SpindleLengthPlugin
 
-This FIJI plugin tracks the spindle length of cells dividing. 
+This FIJI plugin tracks the spindle length of cells dividing. It works on TIFF stacks.
 
 To install:
-- get the "Python" folder and the .jar file from Installation folder.
+- get the "Python" folder and the .jar file from Installation folder in this repository.
 - In your file system, go to "Applications", right-click on "FIJI", select "Show package contents".
 - paste the "Python" folder here.
 - enter the "plugins" folder.
