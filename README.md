@@ -9,9 +9,9 @@ To install:
 <img width="643" alt="C6A959A4-DE5D-41CA-8366-E78297F0E385" src="https://user-images.githubusercontent.com/32312683/69989592-f22ec480-1511-11ea-9517-5bd38e698ac7.png">
 - In your file system, go to "Applications", right-click on "FIJI", select "Show package contents".
 <img width="787" alt="Screen Shot 2019-12-02 at 2 33 15 PM" src="https://user-images.githubusercontent.com/32312683/69989626-fe1a8680-1511-11ea-9c1a-10039884a776.png">
-- enter the "plugins" folder and drag the .jar file from "Installation" folder here.
+- enter the "plugins" folder and copy/paste or drag the .jar file from "Installation" folder here.
 <img width="1440" alt="Screen Shot 2019-12-02 at 2 35 26 PM" src="https://user-images.githubusercontent.com/32312683/69989682-23a79000-1512-11ea-9123-d539131856c7.png">
-- paste the "Python" folder here in the "Show package contents" folder 
+- copy/paste or drag the "Python" folder here in the "Show package contents" folder 
 <img width="1440" alt="64B678EF-AC83-4FE0-B700-B100B153A8B7" src="https://user-images.githubusercontent.com/32312683/69989701-3752f680-1512-11ea-9443-6b82c9e9aef2.png">
 - the FIJI "Show package contents" folder should look like this:
 <img width="795" alt="3AE580C7-9132-4CCF-8871-9157273A8979" src="https://user-images.githubusercontent.com/32312683/69989723-45a11280-1512-11ea-8db2-57238c23ac1e.png">
