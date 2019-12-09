@@ -2,6 +2,10 @@
 
 This FIJI plugin tracks the spindle length of cells dividing. It works on TIFF stacks.
 
+Please note that to use this plugin, you'll need to have FIJI (obviously) and anaconda installed (to run Python). You can download these here:
+https://imagej.net/Fiji/Downloads
+https://www.anaconda.com/distribution/
+
 To install:
 - Download a ZIP of the repository.
 <img width="1440" alt="74DF7464-F8FD-41F5-B6A0-3B21709974DA" src="https://user-images.githubusercontent.com/32312683/69989526-c7dd0700-1511-11ea-8399-56c45d12f320.png">
