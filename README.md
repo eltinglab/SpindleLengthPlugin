@@ -1,6 +1,6 @@
 # SpindleLengthPlugin
 
-This FIJI plugin tracks the spindle length of cells dividing. It works on TIFF stacks.
+This FIJI plugin tracks the spindle length of _S.pombe_ cells dividing. It works on TIFF stacks. You can try it out on the files in the input folder in this repository.
 
 Please note that to use this plugin, you'll need to have FIJI (obviously) and anaconda installed (to run Python). You can download these here:
 https://imagej.net/Fiji/Downloads
