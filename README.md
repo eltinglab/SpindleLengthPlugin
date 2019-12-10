@@ -6,6 +6,8 @@ Please note that to use this plugin, you'll need to have FIJI (obviously) and an
 https://imagej.net/Fiji/Downloads
 https://www.anaconda.com/distribution/
 
+Also note that for now, the plugin does not work on Windows operating systems. We're working on it!
+
 To install:
 - Download a ZIP of the repository.
 <img width="1440" alt="74DF7464-F8FD-41F5-B6A0-3B21709974DA" src="https://user-images.githubusercontent.com/32312683/69989526-c7dd0700-1511-11ea-8399-56c45d12f320.png">
