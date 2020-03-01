@@ -339,7 +339,13 @@ public class Spindle_Length implements PlugInFilter {
 		String s2 = null;
 		double thresh = 0.0;
 		try {
-			Process p = Runtime.getRuntime().exec("python python/newinterpolation.py " + pixelString);
+			Process p;
+			if (IJ.isWindows()) {
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \"python/newinterpolation.py\" " + pixelString);
+		        p = builder.start();
+			} else {
+				p = Runtime.getRuntime().exec("python python/newinterpolation.py " + pixelString);
+			}
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			while ((s1 = stdInput.readLine()) != null) {
                 s2 = s1;
@@ -413,8 +419,14 @@ public class Spindle_Length implements PlugInFilter {
 		double minorx = 1.0;
 		double minory = 1.0;
 		try {
-			Process p = Runtime.getRuntime().exec("python python/lazylinalg.py " + matrixString);
-			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			Process p;
+			if (IJ.isWindows()) {
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \"python/lazylinalg.py\" " + matrixString);
+		        p = builder.start();
+			} else {
+				p = Runtime.getRuntime().exec("python python/lazylinalg.py " + matrixString);
+			}
+		    BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
             xvector = Double.valueOf(stdInput.readLine());
             yvector = Double.valueOf(stdInput.readLine());
             minorx = Double.valueOf(stdInput.readLine());
@@ -503,7 +515,13 @@ public class Spindle_Length implements PlugInFilter {
 		int oneend = 0;
 		int otherend = 0;
 		try {
-			Process p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString + " " + pivot);
+			Process p;
+			if (IJ.isWindows()) {
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \" python/curvefit2.py\" " +indexString + " " + intenseString + " " + pivot);
+		        p = builder.start();
+			} else {
+				p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString + " " + pivot);
+			}
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			try {
 				rsquared = Double.valueOf(stdInput.readLine());
