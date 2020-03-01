@@ -5,7 +5,10 @@ import sys
 ## takes in moment of inertia tensor matrix as comma seperated string command line argument
 ## outputs principal eigenvector
 
-a = sys.argv[1].split(",")
+f = open("python/matrixstring.txt", "r")
+u = f.readline()
+
+a = u.split(",")
 a = [float(i) for i in a]
 
 matrix = np.array(([a[0], a[1]], [a[2], a[3]]))

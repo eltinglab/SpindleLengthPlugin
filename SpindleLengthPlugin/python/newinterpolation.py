@@ -47,8 +47,13 @@ hi = scipy.interpolate.Rbf(stdevs, means, skews, thresholds, function = "linear"
 ## takes in array of intensities as comma separated string command line argument
 ## outputs interpolated intensity threshold value
 
+f = open("python/pixelstring.txt", "r")
+u = f.readline()
 
-hist = sys.argv[1].split(",")
+print("read file")
+
+hist = u.split(",")
+#hist = sys.argv[1].split(",")
 
 hist = [float(i) for i in hist]
 

@@ -69,7 +69,14 @@ public class Spindle_Length implements PlugInFilter {
 
 		// Plugin runs on current open image
 		ImageStack stack = IJ.getImage().getImageStack();
-				
+//		
+//		String imageName = "input/Stack-1.tif";
+//		ImagePlus stack2 = IJ.openImage(imageName);
+//	    ImageStack stack = stack2.getImageStack();
+//	    IJ.openImage(imageName);
+	
+		System.out.println("Running");
+		
 		// prompts user for output filename
 		IJ.showMessage("Choose where to save output file, called lengths.csv");
 
@@ -288,12 +295,12 @@ public class Spindle_Length implements PlugInFilter {
 		);
 	}
 
-	public static double getLength(ImagePlus im, RoiManager m, double progress) {
+	public static double getLength(ImagePlus im, RoiManager m, double progress) throws Exception{
 		
 		ImagePlus im2 = im.duplicate();
 		ImageProcessor proc = im2.getProcessor();
 
-		
+	    System.err.println("Hi");	
 		// normalize all images (with linear transformation) so they go from 0 to 65000
 		double maximum = Integer.MIN_VALUE;
 		double minimum = Integer.MAX_VALUE;
@@ -332,7 +339,31 @@ public class Spindle_Length implements PlugInFilter {
 			}
 		}
 		pixelString.deleteCharAt(pixelString.length() - 1); //removes trailing comma
+	
+		System.out.println("Writing pixels to file...");
+		File f = new File("python/pixelstring.txt");
+		if (f.exists()) {
+			f.delete();
+		}
+		try {
+			f.createNewFile();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		PrintStream pixels = null;
+		try {
+			pixels = new PrintStream(f);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 		
+	
+		pixels.println(pixelString);
+		pixels.close();
+		
+		System.out.println("Wrote pixels to file!");
 		
 		// runs python script to interpolate a threshold based on the pixel array
 		String s1 = null;
@@ -341,14 +372,15 @@ public class Spindle_Length implements PlugInFilter {
 		try {
 			Process p;
 			if (IJ.isWindows()) {
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \"python/newinterpolation.py\" " + pixelString);
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \"python/newinterpolation.py\" ");
 		        p = builder.start();
 			} else {
-				p = Runtime.getRuntime().exec("python python/newinterpolation.py " + pixelString);
+				p = Runtime.getRuntime().exec("python python/newinterpolation.py " );
 			}
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			while ((s1 = stdInput.readLine()) != null) {
-                s2 = s1;
+                System.out.println(s1);
+				s2 = s1;
             }
             p.destroy();
 		
@@ -357,6 +389,8 @@ public class Spindle_Length implements PlugInFilter {
 		}
 		thresh = Double.valueOf(s2);
 				
+		System.out.println("Successfully read file!");
+		
 		// sets all pixels below the threshold to zero intensity
 		for (int i = 0; i < proc.getWidth(); i++) {
 			for (int j = 0; j < proc.getHeight(); j++) {
@@ -412,6 +446,30 @@ public class Spindle_Length implements PlugInFilter {
 		
 		String matrixString = Ixx + "," + Ixy + "," + Ixy + "," + Iyy;
 
+		File f1 = new File("python/matrixstring.txt");
+		if (f1.exists()) {
+			f1.delete();
+		}
+		try {
+			f1.createNewFile();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		
+		PrintStream matrix = null;
+		try {
+			matrix = new PrintStream(f1);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+	
+		matrix.println(matrixString);
+		matrix.close();
+		
+		
 		// passes in matrix string to python script which outputs principal eigenvectors
 		double xvector = 1.0;
 		double yvector = 1.0;
@@ -421,10 +479,10 @@ public class Spindle_Length implements PlugInFilter {
 		try {
 			Process p;
 			if (IJ.isWindows()) {
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \"python/lazylinalg.py\" " + matrixString);
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \"python/lazylinalg.py\" ");
 		        p = builder.start();
 			} else {
-				p = Runtime.getRuntime().exec("python python/lazylinalg.py " + matrixString);
+				p = Runtime.getRuntime().exec("python python/lazylinalg.py ");
 			}
 		    BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
             xvector = Double.valueOf(stdInput.readLine());
@@ -509,7 +567,35 @@ public class Spindle_Length implements PlugInFilter {
 		
 		intenseString.deleteCharAt(intenseString.length() - 1);
 		indexString.deleteCharAt(indexString.length() - 1); // removes trailing comma
+		
+	
+		File f2 = new File("python/intensitiesstring.txt");
+		
+		if (f2.exists()) {
+			f2.delete();
+		}
+		try {
+			f2.createNewFile();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 
+		PrintStream intense = null;
+		try {
+			intense = new PrintStream(f2);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+	
+		intense.println(intenseString);
+		intense.println(indexString);
+		intense.println(pivot);
+		intense.close();
+		
+		
+		
 		double rsquared = 0.0;
 		double l = -1.0;
 		int oneend = 0;
@@ -517,10 +603,10 @@ public class Spindle_Length implements PlugInFilter {
 		try {
 			Process p;
 			if (IJ.isWindows()) {
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \" python/curvefit2.py\" " +indexString + " " + intenseString + " " + pivot);
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \" python/curvefit2.py\" ");
 		        p = builder.start();
 			} else {
-				p = Runtime.getRuntime().exec("python python/curvefit2.py " + indexString + " " + intenseString + " " + pivot);
+				p = Runtime.getRuntime().exec("python python/curvefit2.py ");
 			}
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			try {
@@ -588,6 +674,7 @@ public class Spindle_Length implements PlugInFilter {
 		// start ImageJ
 		new ImageJ();
 
+		
 		// run plugin
 		IJ.runPlugIn(clazz.getName(), "");	
 	}
