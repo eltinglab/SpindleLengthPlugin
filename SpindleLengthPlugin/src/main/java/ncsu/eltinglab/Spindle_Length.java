@@ -104,7 +104,11 @@ public class Spindle_Length implements PlugInFilter {
 		IJ.showMessage("Need to exit?", "Hold the the escape key to exit without saving anytime.");
 		
 		// analyze images
-		RoiManager manager = new RoiManager();
+		//RoiManager manager = new RoiManager();
+		RoiManager manager = RoiManager.getInstance();
+		if (manager == null) {
+			manager = new RoiManager();
+		}
 		ArrayList<Double> lengths = new ArrayList<Double>();
 		ArrayList<Integer> frames = new ArrayList<Integer>();
 		int roiCount = 0;
@@ -168,6 +172,7 @@ public class Spindle_Length implements PlugInFilter {
 			out.println(frames.get(i) + "," + manager.getRoi(roiCount).getXBase() + "," +
 					manager.getRoi(roiCount).getYBase() + "," + manager.getRoi(roiCount + 1).getXBase() + 
 					"," + manager.getRoi(roiCount + 1).getYBase() + "," + lengths.get(i));
+			System.out.println("Length: " + lengths.get(i));
 			roiCount += 2;
 		
 		}
@@ -317,16 +322,41 @@ public class Spindle_Length implements PlugInFilter {
 			}
 		}
 		
+		System.out.println("Maximum: " + maximum + " Minimum: " + minimum);
+		
 		double slope = 65000.0 / (maximum - minimum);
 		double intercept = -1 * slope * minimum;
+		
+		System.out.println("Slope: " + slope);
+		System.out.println("Intercept: " + intercept);
+		
 		
 		for (int i = 0; i < proc.getWidth(); i++) {
 			for (int j = 0; j < proc.getHeight(); j++) {
 				int old = proc.get(i,j);
 				double n = slope * old + intercept;	
 				proc.set(i, j, (int) n);
+				proc.putPixel(i, j, (int) n);
+				//System.out.println(old + " , " + proc.get(i,j));
 			}
 		}		
+		
+		maximum = Integer.MIN_VALUE;
+		minimum = Integer.MAX_VALUE;
+		
+		for (int i = 0; i < proc.getWidth(); i++) {
+			for (int j = 0; j < proc.getHeight(); j++) {
+				if (proc.get(i,j) > maximum) {
+					maximum = proc.get(i, j);
+				}
+				if (proc.get(i,j) < minimum) {
+					minimum = proc.get(i, j);
+				}
+				
+			}
+		}
+		
+		System.out.println("Maximum: " + maximum + " Minimum: " + minimum);
 		
 		ImageProcessor proc2 = proc.duplicate(); // keep a copy of the original for later
 		
@@ -383,12 +413,16 @@ public class Spindle_Length implements PlugInFilter {
 				s2 = s1;
             }
             p.destroy();
+            
+            System.out.println(s2);
 		
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		thresh = Double.valueOf(s2);
-				
+		
+		System.out.println("Threshold: " + thresh);
+		
 		System.out.println("Successfully read file!");
 		
 		// sets all pixels below the threshold to zero intensity
@@ -431,6 +465,8 @@ public class Spindle_Length implements PlugInFilter {
 		
 		double xcm = xsum/mass;
 		double ycm = ysum/mass;
+		
+		System.out.println("xcm: " + xcm + " ycm: " + ycm);
 
 		// calculates moment of inertia tensor "matrix"
 		double Ixx = 0;
@@ -639,12 +675,12 @@ public class Spindle_Length implements PlugInFilter {
 		
 		im.show();
 		
-		// add red ROI circles on the ends of the spindle and add them to the ROI manager.
+		// add ROI circles on the ends of the spindle and add them to the ROI manager.
 		Vector<Roi> displayList = new Vector<Roi>();
 		Roi circle = new OvalRoi(pointsx.get(minindex), pointsy.get(minindex), 5, 5);
-		circle.setFillColor(Color.RED);
+		circle.setFillColor(Color.MAGENTA);
 		Roi circle2 = new OvalRoi(pointsx.get(maxindex), pointsy.get(maxindex), 5, 5);
-		circle2.setFillColor(Color.RED);
+		circle2.setFillColor(Color.MAGENTA);
 		displayList.add(circle);
 		displayList.add(circle2);
 		ImageCanvas c = im.getCanvas();

@@ -66,11 +66,11 @@ def getThreshold(oned):
 
 	thresholdcalc = hi(stdev, mean, skew)
 
-	# print("max: ", maxx)
-	# print("min: ", minn)
-	# print("stdev: ", stdev)
-	# print("mean: ", mean)
-	# print("skew: ", skew)
+	print("max: ", maxx)
+	print("min: ", minn)
+	print("stdev: ", stdev)
+	print("mean: ", mean)
+	print("skew: ", skew)
 
 	return thresholdcalc
 

@@ -7,7 +7,8 @@ def easyerf(x,a,b,c, d):
     return a*scipy.special.erf((b * x) - c) + d
 
 
-def pwerf(x, a1, a2, b, c1, c2, h, e):
+def pwerf(x, a1, a2, b, c1, c2, h):
+	e = (c1 + c2) / 2
     returnarray = []
     for i in x:
         if i < e:
@@ -53,12 +54,12 @@ arg7 = (minindex + maxindex) / 2
 
 ## curve fit
 try:
-    p, c = scipy.optimize.curve_fit(pwerf, a, b, [arg1, arg2, arg3, arg4, arg5, arg6, cm])
+    p, c = scipy.optimize.curve_fit(pwerf, a, b, [arg1, arg2, arg3, arg4, arg5, arg6])
 except Exception as e:
     print(e)
 
 ## calculate r squared values
-residuals = b - np.array(pwerf(a, p[0], p[1], p[2], p[3], p[4], p[5], p[6]))
+residuals = b - np.array(pwerf(a, p[0], p[1], p[2], p[3], p[4], p[5]))
 ss_res = np.sum(residuals**2)
 ss_tot = np.sum((b-np.mean(b))**2)
 r_squared = 1 - (ss_res / ss_tot)
