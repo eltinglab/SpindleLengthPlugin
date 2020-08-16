@@ -8,7 +8,7 @@ def easyerf(x,a,b,c, d):
 
 
 def pwerf(x, a1, a2, b, c1, c2, h):
-	e = (c1 + c2) / 2
+	e = ( (c1 / b) + (c2 / b)) / 2
     returnarray = []
     for i in x:
         if i < e:

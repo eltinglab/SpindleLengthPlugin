@@ -75,7 +75,7 @@ public class Spindle_Length implements PlugInFilter {
 //	    ImageStack stack = stack2.getImageStack();
 //	    IJ.openImage(imageName);
 	
-		System.out.println("Running");
+		//System.out.println("Running");
 		
 		// prompts user for output filename
 		IJ.showMessage("Choose where to save output file, called lengths.csv");
@@ -305,7 +305,7 @@ public class Spindle_Length implements PlugInFilter {
 		ImagePlus im2 = im.duplicate();
 		ImageProcessor proc = im2.getProcessor();
 
-	    System.err.println("Hi");	
+	    System.err.println("Running");	
 		// normalize all images (with linear transformation) so they go from 0 to 65000
 		double maximum = Integer.MIN_VALUE;
 		double minimum = Integer.MAX_VALUE;
@@ -322,13 +322,13 @@ public class Spindle_Length implements PlugInFilter {
 			}
 		}
 		
-		System.out.println("Maximum: " + maximum + " Minimum: " + minimum);
+		//System.out.println("Maximum: " + maximum + " Minimum: " + minimum);
 		
-		double slope = 65000.0 / (maximum - minimum);
+		double slope = 65535.0 / (maximum - minimum);
 		double intercept = -1 * slope * minimum;
 		
-		System.out.println("Slope: " + slope);
-		System.out.println("Intercept: " + intercept);
+		//System.out.println("Slope: " + slope);
+		//System.out.println("Intercept: " + intercept);
 		
 		
 		for (int i = 0; i < proc.getWidth(); i++) {
@@ -356,7 +356,6 @@ public class Spindle_Length implements PlugInFilter {
 			}
 		}
 		
-		System.out.println("Maximum: " + maximum + " Minimum: " + minimum);
 		
 		ImageProcessor proc2 = proc.duplicate(); // keep a copy of the original for later
 		
@@ -370,7 +369,7 @@ public class Spindle_Length implements PlugInFilter {
 		}
 		pixelString.deleteCharAt(pixelString.length() - 1); //removes trailing comma
 	
-		System.out.println("Writing pixels to file...");
+		//System.out.println("Writing pixels to file...");
 		File f = new File("python/pixelstring.txt");
 		if (f.exists()) {
 			f.delete();
@@ -393,7 +392,7 @@ public class Spindle_Length implements PlugInFilter {
 		pixels.println(pixelString);
 		pixels.close();
 		
-		System.out.println("Wrote pixels to file!");
+		//System.out.println("Wrote pixels to file!");
 		
 		// runs python script to interpolate a threshold based on the pixel array
 		String s1 = null;
@@ -409,21 +408,21 @@ public class Spindle_Length implements PlugInFilter {
 			}
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			while ((s1 = stdInput.readLine()) != null) {
-                System.out.println(s1);
+                //System.out.println(s1);
 				s2 = s1;
             }
             p.destroy();
             
-            System.out.println(s2);
+            //System.out.println(s2);
 		
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		thresh = Double.valueOf(s2);
 		
-		System.out.println("Threshold: " + thresh);
+		//System.out.println("Threshold: " + thresh);
 		
-		System.out.println("Successfully read file!");
+		//System.out.println("Successfully read file!");
 		
 		// sets all pixels below the threshold to zero intensity
 		for (int i = 0; i < proc.getWidth(); i++) {
@@ -466,7 +465,7 @@ public class Spindle_Length implements PlugInFilter {
 		double xcm = xsum/mass;
 		double ycm = ysum/mass;
 		
-		System.out.println("xcm: " + xcm + " ycm: " + ycm);
+		//System.out.println("xcm: " + xcm + " ycm: " + ycm);
 
 		// calculates moment of inertia tensor "matrix"
 		double Ixx = 0;
