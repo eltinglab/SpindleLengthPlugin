@@ -3,10 +3,13 @@
 This FIJI plugin tracks the spindle length of _S.pombe_ cells dividing. It works on TIFF stacks. You can try it out on the files in the input folder in this repository.
 
 Please note that to use this plugin, you'll need to have FIJI (obviously) and anaconda installed (to run Python). You can download these here:
+
 https://imagej.net/Fiji/Downloads
+
+
 https://www.anaconda.com/distribution/
 
-Also note that for now, the plugin does not work on Windows operating systems. We're working on it!
+Also note that we're working on creating installation instructions for Windows!
 
 To install:
 - Download a ZIP of the repository.
@@ -25,7 +28,7 @@ To install:
 <img width="647" alt="Screen Shot 2019-12-02 at 2 37 22 PM" src="https://user-images.githubusercontent.com/32312683/69989768-5f425a00-1512-11ea-9333-189408334635.png">
 
 To run:
-- open your desired TIFF stack in FIJI
+- open your desired TIFF stack in FIJI (you can use one from the "input" folder of the repository if you like)
 - select "Spindle Length" from the plugins menu
 - follow the directions from the popup menus to choose where to save the output file and scale the image
 - after the program is done running, the output file, called "lengths.csv" will be saved in the folder you chose.
