@@ -135,7 +135,8 @@ public class Spindle_Length implements PlugInFilter {
 			}
 			
 			try {
-				TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
+				//TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
+				TimeUnit.MILLISECONDS.sleep(500);
 				if (IJ.escapePressed()) {
 					System.exit(1);
 				}
@@ -624,8 +625,8 @@ public class Spindle_Length implements PlugInFilter {
 		}
 		
 	
-		intense.println(intenseString);
 		intense.println(indexString);
+		intense.println(intenseString);
 		intense.println(pivot);
 		intense.close();
 		
@@ -665,11 +666,16 @@ public class Spindle_Length implements PlugInFilter {
 		double deltay = Math.abs(pointsy.get(minindex) - pointsy.get(maxindex));
 
 		double length = Math.sqrt(deltax * deltax + deltay * deltay);
+		
+		double max_length = Math.sqrt(proc.getHeight() * proc.getHeight() + proc.getWidth() * proc.getWidth());
 
-		if (rsquared >= 0.75 && l < proc.getHeight() && l < proc.getWidth()) {
+		System.out.println(rsquared);
+		if (rsquared >= 0.85 && l < max_length) {
 			minindex = oneend;
 			maxindex = otherend;
 			length = l;
+		} else {
+			System.out.println("Curve fit was bad!");
 		}
 		
 		im.show();
