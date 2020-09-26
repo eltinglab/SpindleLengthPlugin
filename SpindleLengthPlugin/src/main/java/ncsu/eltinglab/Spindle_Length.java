@@ -646,14 +646,10 @@ public class Spindle_Length implements PlugInFilter {
 			}
 			BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			try {
-				while ((s1 = stdInput.readLine()) != null) {
-	                System.out.println(s1);
-					s2 = s1;
-	            }
-//				rsquared = Double.valueOf(stdInput.readLine());
-//	            l = Double.valueOf(stdInput.readLine());
-//	            oneend = Integer.valueOf(stdInput.readLine());
-//	            otherend = Integer.valueOf(stdInput.readLine());
+				rsquared = Double.valueOf(stdInput.readLine());
+	            l = Double.valueOf(stdInput.readLine());
+	            oneend = Integer.valueOf(stdInput.readLine());
+	            otherend = Integer.valueOf(stdInput.readLine());
 			} catch (Exception e) { // there was an error in the curve fitting
 				//do nothing
 			}
