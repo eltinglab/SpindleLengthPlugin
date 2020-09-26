@@ -35,7 +35,7 @@ To run:
 - Configure python executable
 For the plugin to work correctly, there's an additional step to take on Windows. You must be able to run Python scripts in the command prompt using the command "python", i.e. running "python test.py" will run the file. This site has instructions on how to do it: https://www.pythoncentral.io/add-python-to-path-python-is-not-recognized-as-an-internal-or-external-command/. You'll just need to add a new environment variable pointing to where the Python executable file is. I'd suggest you test this out with a test script; just run "python test.py" or whatever your file is called in the Windows command prompt to make sure that it runs.
 
-- Download a ZIP of the repository. Select "
+- Download a ZIP of the repository.
 ![image](https://user-images.githubusercontent.com/32312683/94350659-6a74f200-001e-11eb-8a47-dbe2e19e27ed.png)
 
 - Open the folder. Click "SpindleLengthPlugin-master", then "SpindleLengthPlugin". All of the files you'll need are in the "Installation" folder.
