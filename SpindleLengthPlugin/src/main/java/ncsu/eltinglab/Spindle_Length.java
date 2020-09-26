@@ -639,7 +639,7 @@ public class Spindle_Length implements PlugInFilter {
 		try {
 			Process p;
 			if (IJ.isWindows()) {
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \" python/curvefit2.py\" ");
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "python \"python/curvefit2.py\" ");
 		        p = builder.start();
 			} else {
 				p = Runtime.getRuntime().exec("python python/curvefit2.py ");
