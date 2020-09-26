@@ -41,7 +41,10 @@ For the plugin to work correctly, there's an additional step to take on Windows.
 - Open the folder. Click "SpindleLengthPlugin-master", then "SpindleLengthPlugin". All of the files you'll need are in the "Installation" folder.
 ![image](https://user-images.githubusercontent.com/32312683/94350705-d5262d80-001e-11eb-8468-9e0921124e31.png)
 
-- In your file system, go to where you keep FIJI and open the "Fiji.app" folder to access the contents of FIJI.
+- Right-click on the FIJI icon and select "open file location" to access the contents of FIJI.
+
+![image](https://user-images.githubusercontent.com/32312683/94350942-b07f8500-0021-11eb-994f-caf7ae0e58af.png)
+
 ![image](https://user-images.githubusercontent.com/32312683/94350726-ff77eb00-001e-11eb-96c0-2bcea70a501f.png)
 
 - Drag (or copy/paste) the .jar file from the "Installation" folder of the download to the "plugins" folder of FIJI.
