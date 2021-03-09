@@ -300,6 +300,82 @@ public class Spindle_Length implements PlugInFilter {
 			"measures spindle length over time of dividing cells"
 		);
 	}
+	
+	public static int[] old_to_new(ImageProcessor proc, double old_x, double old_y, double xvector, double yvector) {
+		double angle = Math.atan(yvector / xvector) * (180 / Math.PI); // angle from positive x axis
+		double rotation_angle = (270 + angle) * (Math.PI/180); // actual angle to rotate by (converted to radians)
+		
+		
+		double cos = Math.cos(rotation_angle);
+		double sin = Math.sin(rotation_angle);
+		
+		int height = proc.getHeight();
+		int width = proc.getWidth();
+		
+		int new_height = ((int) (Math.abs(height * cos) + Math.abs(width * sin))) + 1;
+		int new_width = ((int) (Math.abs(width * cos) + Math.abs(height * sin))) + 1;
+				
+		int new_center_x = (int) ((new_width + 1) / 2 - 1);
+		int new_center_y = (int) ((new_height + 1) / 2 - 1); 
+		
+		double x = width - 1 - old_x - (int) ((width + 1)/2 - 1);
+		double y = height - 1 - old_y - (int) ((height + 1)/2 - 1);
+		
+		double new_x = cos * x + sin * y;
+		double new_y = -sin * x + cos*y;
+		
+		int new_x_val = new_center_x - (int) new_x;
+		int new_y_val = new_center_y - (int) new_y;
+		
+		int[] new_vals = {new_x_val, new_y_val};
+		
+		return new_vals;
+	}
+	
+	public static ImageProcessor rotate(ImageProcessor proc, double xvector, double yvector) {
+				
+		double angle = Math.atan(yvector / xvector) * (180 / Math.PI); // angle from positive x axis
+		double rotation_angle = (270 + angle) * (Math.PI/180); // actual angle to rotate by (converted to radians)
+		
+		int mode = proc.getStatistics().mode;
+		System.out.println(mode);
+		
+		double cos = Math.cos(rotation_angle);
+		double sin = Math.sin(rotation_angle);
+		
+		int height = proc.getHeight();
+		int width = proc.getWidth();
+		
+		int new_height = ((int) (Math.abs(height * cos) + Math.abs(width * sin))) + 1;
+		int new_width = ((int) (Math.abs(width * cos) + Math.abs(height * sin))) + 1;
+		
+		ImageProcessor rot = proc.createProcessor(new_width, new_height);
+		
+		int new_center_x = (int) ((new_width + 1) / 2 - 1);
+		int new_center_y = (int) ((new_height + 1) / 2 - 1);
+
+		for (int i = 0; i < proc.getHeight(); i++) {
+			for (int j = 0; j < proc.getWidth(); j++) {
+				double y = height - 1 - i - (int) ((height + 1)/2 - 1);
+				double x = width - 1 - j - (int) ((width + 1)/2 - 1);
+				double new_x = cos * x + sin * y;
+				double new_y = -sin * x + cos*y;
+				rot.set(new_center_x - (int) new_x, new_center_y - (int) new_y, proc.get(j, i));
+				
+			}
+		}
+		
+		for (int i = 0; i < rot.getHeight(); i++) {
+			for (int j = 0; j < rot.getWidth(); j++) {
+				if (rot.get(j, i) == 0) {
+					rot.set(j, i, mode * (65535/256));
+				}
+			}
+		}
+
+		
+		return rot;
+	}
 
 	public static double getLength(ImagePlus im, RoiManager m, double progress) throws Exception{
 		
@@ -530,14 +606,40 @@ public class Spindle_Length implements PlugInFilter {
 			e.printStackTrace();
 		}
 		
+		// this is where we rotate the image
+//		
+//		System.out.println("xvector: " + xvector);
+//		System.out.println("yvector: " + yvector);
+//		System.out.println("xcm:" + xcm);
+//		System.out.println("ycm:" + ycm);
+		
+		proc = rotate(proc2, xvector, yvector);
+		ImagePlus rotated_image = new ImagePlus("rotate", proc);
+		rotated_image.show();
+		
+		int[] new_cms = old_to_new(proc2, xcm, ycm, xvector, yvector);
+		
+		proc2 = proc;
+		
+		yvector = 1.0;
+		xvector = 0.0;
+		
+		minorx = 1.0;
+		minory = 0.0;
+		
 		// backtrack vector from center of mass to edge of image
-		double x = xcm;
-		double y = ycm;
+		double x = new_cms[0];
+		double y = new_cms[1];
 		while ((x > 0 && y > 0) && (x < (proc.getWidth() - Math.abs(xvector)) && y < (proc.getHeight() - Math.abs(yvector)))) {
 			x += xvector;
 			y += yvector;
 		}
 
+		
+		System.out.println(x);
+		System.out.println(y);
+		
+		
 		ArrayList<Integer> intensities = new ArrayList<Integer>();
 		ArrayList<Integer> intensities_integrate = new ArrayList<Integer>();
 		ArrayList<Integer> indexes = new ArrayList<Integer>();
@@ -552,11 +654,15 @@ public class Spindle_Length implements PlugInFilter {
 			x += -1 * xvector;
 			y += -1 * yvector;
 
-			intensities.add(proc.get((int) x,(int) y));
+//			System.out.println(x);
+//			System.out.println(y);
+//			
+			
+			intensities.add(proc2.get((int) x,(int) y));
 
 			int intensity = proc2.get((int) x,(int) y) / 1000;
-			if ((x + 2 * minorx < proc.getWidth() && x + 2 * minorx > 0) && (x - 2 * minorx < proc.getWidth() && x - 2 * minorx > 0)) {
-				if ((y + 2 * minory < proc.getHeight() && y + 2 * minory > 0) && (y - 2 * minory < proc.getHeight() && y - 2 * minory > 0)) {
+			if ((x + 2 * minorx < proc2.getWidth() && x + 2 * minorx >= 0) && (x - 2 * minorx < proc2.getWidth() && x - 2 * minorx >= 0)) {
+				if ((y + 2 * minory < proc2.getHeight() && y + 2 * minory >= 0) && (y - 2 * minory < proc2.getHeight() && y - 2 * minory >= 0)) {
 					intensity += (proc2.get((int)(x + minorx), (int) (y + minory)) / 1000);
 					intensity += (proc2.get((int)(x - minorx), (int) (y - minory)) / 1000);	
 					intensity += (proc2.get((int)(x + 2 * minorx), (int) (y + 2 * minory)) / 1000);
@@ -573,8 +679,11 @@ public class Spindle_Length implements PlugInFilter {
 			index++;
 			pointsx.add(x);
 			pointsy.add(y);
-		} while ((x > (-1 * Math.abs(xvector)) && y > (-1 * Math.abs(yvector))) && 
-				(x < (proc.getWidth() - Math.abs(xvector)) && y < (proc.getHeight() - Math.abs(yvector))));
+			//System.out.println(index);
+		} while ((x > ( Math.abs(xvector)) && y > (Math.abs(yvector))) && 
+				(x < (proc2.getWidth() - Math.abs(xvector)) && y < (proc2.getHeight() - Math.abs(yvector))));
+		
+		//System.out.println("here");
 		
 		// go through the intensities to find the ends (first instance where intensity is
 		// not equal to zero) starting from the front and back of the array.
@@ -593,6 +702,10 @@ public class Spindle_Length implements PlugInFilter {
 			}
 		}
 
+		
+//		System.out.println(minindex);
+//		System.out.println(maxindex);
+		
 		// runs curve fitting code
 		StringBuilder intenseString = new StringBuilder("");
 		StringBuilder indexString = new StringBuilder("");
@@ -667,9 +780,11 @@ public class Spindle_Length implements PlugInFilter {
 
 		double length = Math.sqrt(deltax * deltax + deltay * deltay);
 		
-		double max_length = Math.sqrt(proc.getHeight() * proc.getHeight() + proc.getWidth() * proc.getWidth());
+		double max_length = Math.sqrt(proc2.getHeight() * proc2.getHeight() + proc2.getWidth() * proc2.getWidth());
 
 		System.out.println("R^2: " + rsquared);
+
+		
 		if (rsquared >= 0.85 && l < max_length) {
 			minindex = oneend;
 			maxindex = otherend;
@@ -678,7 +793,7 @@ public class Spindle_Length implements PlugInFilter {
 			System.out.println("Curve fit was bad!");
 		}
 		
-		im.show();
+		//new ImagePlus("image", proc).show();
 		
 		// add ROI circles on the ends of the spindle and add them to the ROI manager.
 		Vector<Roi> displayList = new Vector<Roi>();
@@ -687,8 +802,12 @@ public class Spindle_Length implements PlugInFilter {
 		Roi circle2 = new OvalRoi(pointsx.get(maxindex), pointsy.get(maxindex), 5, 5);
 		circle2.setFillColor(Color.MAGENTA);
 		displayList.add(circle);
-		displayList.add(circle2);
-		ImageCanvas c = im.getCanvas();
+		displayList.add(circle2);		
+		
+		ImagePlus new_im = new ImagePlus("rotated", proc2);	
+		new_im.show();
+		ImageCanvas c = new_im.getCanvas();
+		//ImageCanvas c = im.getCanvas();
 		c.setDisplayList(displayList);
 		m.addRoi(circle);
 		m.addRoi(circle2);
@@ -715,6 +834,15 @@ public class Spindle_Length implements PlugInFilter {
 		// start ImageJ
 		new ImageJ();
 
+		// open the image
+		String imageName = "input/Cell1.tif";
+		ImagePlus stack = IJ.openImage(imageName);
+		System.out.println("Stack size: " + stack.getStackSize());
+		
+		
+		ImagePlus frame = IJ.openImage(imageName, 21);
+		frame.show();
+		
 		
 		// run plugin
 		IJ.runPlugIn(clazz.getName(), "");	
