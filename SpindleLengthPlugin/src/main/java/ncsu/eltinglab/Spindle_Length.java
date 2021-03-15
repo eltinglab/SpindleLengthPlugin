@@ -383,7 +383,7 @@ public class Spindle_Length implements PlugInFilter {
 		ImageProcessor proc = im2.getProcessor();
 
 	    System.err.println("Running");	
-		// normalize all images (with linear transformation) so they go from 0 to 65000
+		// normalize all images (with linear transformation) so they go from 0 to 65535
 		double maximum = Integer.MIN_VALUE;
 		double minimum = Integer.MAX_VALUE;
 				
