@@ -27,6 +27,7 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.GenericDialog;
 import ij.gui.ImageCanvas;
+import ij.gui.NewImage;
 import ij.gui.OvalRoi;
 import ij.gui.Overlay;
 import ij.gui.Roi;
@@ -118,7 +119,7 @@ public class Spindle_Length implements PlugInFilter {
 		for (int framenum = 1; framenum <= stack.getSize(); framenum++) {
 
 			frame = new ImagePlus("Frame " + framenum, stack.getProcessor(framenum));
-			frame.show();
+			//frame.show();
 			double length = -1.0; // the length will stay negative if the algorithm can't measure it
 			try {
 				progress = (double) framenum / (double) stack.getSize();
@@ -312,8 +313,11 @@ public class Spindle_Length implements PlugInFilter {
 		int height = proc.getHeight();
 		int width = proc.getWidth();
 		
-		int new_height = ((int) (Math.abs(height * cos) + Math.abs(width * sin))) + 1;
-		int new_width = ((int) (Math.abs(width * cos) + Math.abs(height * sin))) + 1;
+//		int new_height = ((int) (Math.abs(height * cos) + Math.abs(width * sin))) + 1;
+//		int new_width = ((int) (Math.abs(width * cos) + Math.abs(height * sin))) + 1;
+		
+		int new_height = proc.getHeight();
+		int new_width = proc.getWidth();
 				
 		int new_center_x = (int) ((new_width + 1) / 2 - 1);
 		int new_center_y = (int) ((new_height + 1) / 2 - 1); 
@@ -375,6 +379,46 @@ public class Spindle_Length implements PlugInFilter {
 
 		
 		return rot;
+	}
+	
+	public static double getAngle(double xvector, double yvector) {
+		double angle = Math.atan(yvector / xvector) * (180 / Math.PI); // angle from positive x axis
+		double rotation_angle = (90 - angle); // actual angle to rotate by (in degrees)
+		
+		return rotation_angle;
+	}
+	
+	public static ImageProcessor cropRotatedImage(ImageProcessor ip, double xcm) {
+		
+		
+		
+		//ImagePlus new_im = new ImagePlus();
+		
+		int top = ip.getHeight() - 1;
+		int bottom = 0;
+		
+		while (ip.get((int) xcm, top) == 0) {
+			top--;
+		}
+		
+		while (ip.get((int) xcm, bottom) == 0) {
+			bottom++;
+		}
+		
+		ImagePlus new_im = NewImage.createImage("cropped", ip.getWidth(), top - bottom + 1, 1, 16, 6);
+		ImageProcessor new_proc = new_im.getProcessor();
+		
+		System.out.println("Top, bottom = " + top + " , " + bottom);
+		
+		
+		for (int i = 0; i < ip.getWidth(); i++) {
+			for (int j = 0; j < (top - bottom); j++)  {
+				new_proc.set(i, j, ip.get(i, bottom + j));
+			}
+		
+		}
+		
+		return new_proc;
 	}
 
 	public static double getLength(ImagePlus im, RoiManager m, double progress) throws Exception{
@@ -501,6 +545,8 @@ public class Spindle_Length implements PlugInFilter {
 		
 		//System.out.println("Successfully read file!");
 		
+		
+		
 		// sets all pixels below the threshold to zero intensity
 		for (int i = 0; i < proc.getWidth(); i++) {
 			for (int j = 0; j < proc.getHeight(); j++) {
@@ -612,17 +658,25 @@ public class Spindle_Length implements PlugInFilter {
 //		System.out.println("yvector: " + yvector);
 //		System.out.println("xcm:" + xcm);
 //		System.out.println("ycm:" + ycm);
+	
 		
-		proc = rotate(proc2, xvector, yvector);
-		ImagePlus rotated_image = new ImagePlus("rotate", proc);
-		rotated_image.show();
+		double rot_angle = getAngle(xvector, yvector);
+		
+		proc2.rotate(rot_angle);
+		
+		System.out.println("Rotation angle: " + rot_angle);
 		
 		int[] new_cms = old_to_new(proc2, xcm, ycm, xvector, yvector);
 		
-		proc2 = proc;
-		
+		ImageProcessor ip = cropRotatedImage(proc2, new_cms[0]);
+		ImagePlus cropped = new ImagePlus("cropped", ip);
+		cropped.show();
+
+		proc = ip;
+		proc2 = ip;
+				
 		yvector = 1.0;
-		xvector = 0.0;
+		xvector = 0.0; // now that we've rotated the image for the spindle to be vertical
 		
 		minorx = 1.0;
 		minory = 0.0;
@@ -804,9 +858,9 @@ public class Spindle_Length implements PlugInFilter {
 		displayList.add(circle);
 		displayList.add(circle2);		
 		
-		ImagePlus new_im = new ImagePlus("rotated", proc2);	
-		new_im.show();
-		ImageCanvas c = new_im.getCanvas();
+//		ImagePlus new_im = new ImagePlus("rotated", proc2);	
+//		new_im.show();
+		ImageCanvas c = cropped.getCanvas();
 		//ImageCanvas c = im.getCanvas();
 		c.setDisplayList(displayList);
 		m.addRoi(circle);
@@ -840,7 +894,8 @@ public class Spindle_Length implements PlugInFilter {
 		System.out.println("Stack size: " + stack.getStackSize());
 		
 		
-		ImagePlus frame = IJ.openImage(imageName, 21);
+		
+		ImagePlus frame = IJ.openImage(imageName, 5);
 		frame.show();
 		
 		
