@@ -388,56 +388,60 @@ public class Spindle_Length implements PlugInFilter {
 		return rotation_angle;
 	}
 	
-	public static ImageProcessor cropRotatedImage(ImageProcessor ip, double xcm) {
-		
-		
+	public static ImageProcessor[] cropRotatedImage(ImageProcessor original, ImageProcessor edited, double xcm) {
 		
 		//ImagePlus new_im = new ImagePlus();
 		
-		int top = ip.getHeight() - 1;
+		int top = original.getHeight() - 1;
 		int bottom = 0;
 		
-		while (ip.get((int) xcm, top) == 0) {
+		while (original.get((int) xcm, top) == 0) {
 			top--;
 		}
 		
-		while (ip.get((int) xcm, bottom) == 0) {
+		while (original.get((int) xcm, bottom) == 0) {
 			bottom++;
 		}
 		
-		ImagePlus new_im = NewImage.createImage("cropped", ip.getWidth(), top - bottom + 1, 1, 16, 6);
-		ImageProcessor new_proc = new_im.getProcessor();
+		ImagePlus new_im_orig = NewImage.createImage("cropped", original.getWidth(), top - bottom + 1, 1, 16, 6);
+		ImagePlus new_im_edit = NewImage.createImage("cropped_edit", edited.getWidth(), top - bottom + 1, 1, 16, 6);
+		ImageProcessor new_proc = new_im_orig.getProcessor();
+		ImageProcessor new_proc_edit = new_im_edit.getProcessor();
 		
 		System.out.println("Top, bottom = " + top + " , " + bottom);
 		
 		
-		for (int i = 0; i < ip.getWidth(); i++) {
+		for (int i = 0; i < original.getWidth(); i++) {
 			for (int j = 0; j < (top - bottom); j++)  {
-				new_proc.set(i, j, ip.get(i, bottom + j));
+				new_proc.set(i, j, original.get(i, bottom + j));
+				new_proc_edit.set(i, j, edited.get(i, bottom + j));
 			}
 		
 		}
 		
-		return new_proc;
+		ImageProcessor[] proc_arr = {new_proc, new_proc_edit};
+	
+		
+		return proc_arr;
 	}
 
 	public static double getLength(ImagePlus im, RoiManager m, double progress) throws Exception{
 		
 		ImagePlus im2 = im.duplicate();
-		ImageProcessor proc = im2.getProcessor();
+		ImageProcessor edited = im2.getProcessor();
 
 	    System.err.println("Running");	
 		// normalize all images (with linear transformation) so they go from 0 to 65535
 		double maximum = Integer.MIN_VALUE;
 		double minimum = Integer.MAX_VALUE;
 				
-		for (int i = 0; i < proc.getWidth(); i++) {
-			for (int j = 0; j < proc.getHeight(); j++) {
-				if (proc.get(i,j) > maximum) {
-					maximum = proc.get(i, j);
+		for (int i = 0; i < edited.getWidth(); i++) {
+			for (int j = 0; j < edited.getHeight(); j++) {
+				if (edited.get(i,j) > maximum) {
+					maximum = edited.get(i, j);
 				}
-				if (proc.get(i,j) < minimum) {
-					minimum = proc.get(i, j);
+				if (edited.get(i,j) < minimum) {
+					minimum = edited.get(i, j);
 				}
 				
 			}
@@ -452,12 +456,12 @@ public class Spindle_Length implements PlugInFilter {
 		//System.out.println("Intercept: " + intercept);
 		
 		
-		for (int i = 0; i < proc.getWidth(); i++) {
-			for (int j = 0; j < proc.getHeight(); j++) {
-				int old = proc.get(i,j);
+		for (int i = 0; i < edited.getWidth(); i++) {
+			for (int j = 0; j < edited.getHeight(); j++) {
+				int old = edited.get(i,j);
 				double n = slope * old + intercept;	
-				proc.set(i, j, (int) n);
-				proc.putPixel(i, j, (int) n);
+				edited.set(i, j, (int) n);
+				edited.putPixel(i, j, (int) n);
 				//System.out.println(old + " , " + proc.get(i,j));
 			}
 		}		
@@ -465,27 +469,27 @@ public class Spindle_Length implements PlugInFilter {
 		maximum = Integer.MIN_VALUE;
 		minimum = Integer.MAX_VALUE;
 		
-		for (int i = 0; i < proc.getWidth(); i++) {
-			for (int j = 0; j < proc.getHeight(); j++) {
-				if (proc.get(i,j) > maximum) {
-					maximum = proc.get(i, j);
+		for (int i = 0; i < edited.getWidth(); i++) {
+			for (int j = 0; j < edited.getHeight(); j++) {
+				if (edited.get(i,j) > maximum) {
+					maximum = edited.get(i, j);
 				}
-				if (proc.get(i,j) < minimum) {
-					minimum = proc.get(i, j);
+				if (edited.get(i,j) < minimum) {
+					minimum = edited.get(i, j);
 				}
 				
 			}
 		}
 		
 		
-		ImageProcessor proc2 = proc.duplicate(); // keep a copy of the original for later
+		ImageProcessor original = edited.duplicate(); // keep a copy of the original for later
 		
 		// Making a giant comma-separated list of pixel values to pass into the 
 		// Python script as a fake command line argument
 		StringBuilder pixelString = new StringBuilder("");
-		for (int i = 0; i < proc.getWidth(); i++) {
-			for (int j = 0; j < proc.getHeight(); j++) {
-				pixelString.append(proc.get(i, j) + ",");
+		for (int i = 0; i < edited.getWidth(); i++) {
+			for (int j = 0; j < edited.getHeight(); j++) {
+				pixelString.append(edited.get(i, j) + ",");
 			}
 		}
 		pixelString.deleteCharAt(pixelString.length() - 1); //removes trailing comma
@@ -548,10 +552,10 @@ public class Spindle_Length implements PlugInFilter {
 		
 		
 		// sets all pixels below the threshold to zero intensity
-		for (int i = 0; i < proc.getWidth(); i++) {
-			for (int j = 0; j < proc.getHeight(); j++) {
-				if (proc.get(i, j) < thresh) {
-					proc.set(i, j, 0);
+		for (int i = 0; i < edited.getWidth(); i++) {
+			for (int j = 0; j < edited.getHeight(); j++) {
+				if (edited.get(i, j) < thresh) {
+					edited.set(i, j, 0);
 				} 
 			}
 		}
@@ -559,12 +563,12 @@ public class Spindle_Length implements PlugInFilter {
 		// checks for isolated random bright pixels and sets them to zero
 		// we only do this in the first 80% because it's too difficult on fainter frames
 		if (progress < 0.8) {
-			for (int i = 0; i < proc.getWidth() - 1; i++) {
-				for (int j = 0; j < proc.getHeight() - 1; j++) {
-					if (proc.get(i, j) != 0 ) {
-						if (proc.get(i, j + 1) == 0 && proc.get(i, j - 1) == 0) {
-							if (proc.get(i + 1, j) == 0 && proc.get(i - 1, j) == 0) {
-								proc.set(i, j, 0);
+			for (int i = 0; i < edited.getWidth() - 1; i++) {
+				for (int j = 0; j < edited.getHeight() - 1; j++) {
+					if (edited.get(i, j) != 0 ) {
+						if (edited.get(i, j + 1) == 0 && edited.get(i, j - 1) == 0) {
+							if (edited.get(i + 1, j) == 0 && edited.get(i - 1, j) == 0) {
+								edited.set(i, j, 0);
 							}
 						}
 					}
@@ -577,11 +581,11 @@ public class Spindle_Length implements PlugInFilter {
 		double xsum = 0;
 		double ysum = 0;
 		double mass = 0.0;
-		for (int i = 1; i < proc.getWidth(); i++) {
-			for (int j = 1; j < proc.getHeight(); j++) {
-				mass += proc.get(i, j);
-				xsum += proc.get(i, j) * i;
-				ysum += proc.get(i, j) * j;
+		for (int i = 1; i < edited.getWidth(); i++) {
+			for (int j = 1; j < edited.getHeight(); j++) {
+				mass += edited.get(i, j);
+				xsum += edited.get(i, j) * i;
+				ysum += edited.get(i, j) * j;
 			}
 		}
 		
@@ -594,11 +598,11 @@ public class Spindle_Length implements PlugInFilter {
 		double Ixx = 0;
 		double Iyy = 0;
 		double Ixy = 0;
-		for (int i = 0; i < proc.getWidth(); i++) {
-			for (int j = 0; j < proc.getHeight(); j++) {
-				Ixx = Ixx + proc.get(i, j) * (i - xcm) * (i - xcm);
-				Iyy = Iyy + proc.get(i, j) * (j - ycm) * (j - ycm);
-				Ixy = Ixy + proc.get(i, j) * (i - xcm) * (j - ycm);
+		for (int i = 0; i < edited.getWidth(); i++) {
+			for (int j = 0; j < edited.getHeight(); j++) {
+				Ixx = Ixx + edited.get(i, j) * (i - xcm) * (i - xcm);
+				Iyy = Iyy + edited.get(i, j) * (j - ycm) * (j - ycm);
+				Ixy = Ixy + edited.get(i, j) * (i - xcm) * (j - ycm);
 			}
 		}
 		
@@ -662,18 +666,24 @@ public class Spindle_Length implements PlugInFilter {
 		
 		double rot_angle = getAngle(xvector, yvector);
 		
-		proc2.rotate(rot_angle);
+		edited.rotate(rot_angle);
+		original.rotate(rot_angle);
 		
 		System.out.println("Rotation angle: " + rot_angle);
 		
-		int[] new_cms = old_to_new(proc2, xcm, ycm, xvector, yvector);
+		int[] new_cms = old_to_new(edited, xcm, ycm, xvector, yvector);
 		
-		ImageProcessor ip = cropRotatedImage(proc2, new_cms[0]);
-		ImagePlus cropped = new ImagePlus("cropped", ip);
+		System.out.println("center of mass:" + new_cms[0] + " " + new_cms[1]);
+		
+		// need to crop the original and edited one the same way based on the original
+		ImageProcessor[] cropped_procs = cropRotatedImage(original, edited, new_cms[0]);
+		ImageProcessor cropped_original = cropped_procs[0];
+		ImageProcessor cropped_edited = cropped_procs[1];
+		ImagePlus cropped = new ImagePlus("cropped", cropped_original);
 		cropped.show();
 
-		proc = ip;
-		proc2 = ip;
+		edited = cropped_edited;
+		original = cropped_original;
 				
 		yvector = 1.0;
 		xvector = 0.0; // now that we've rotated the image for the spindle to be vertical
@@ -684,14 +694,14 @@ public class Spindle_Length implements PlugInFilter {
 		// backtrack vector from center of mass to edge of image
 		double x = new_cms[0];
 		double y = new_cms[1];
-		while ((x > 0 && y > 0) && (x < (proc.getWidth() - Math.abs(xvector)) && y < (proc.getHeight() - Math.abs(yvector)))) {
+		while ((x > 0 && y > 0) && (x < (edited.getWidth() - Math.abs(xvector)) && y < (edited.getHeight() - Math.abs(yvector)))) {
 			x += xvector;
 			y += yvector;
 		}
 
-		
-		System.out.println(x);
-		System.out.println(y);
+//		
+//		System.out.println(x);
+//		System.out.println(y);
 		
 		
 		ArrayList<Integer> intensities = new ArrayList<Integer>();
@@ -712,17 +722,22 @@ public class Spindle_Length implements PlugInFilter {
 //			System.out.println(y);
 //			
 			
-			intensities.add(proc2.get((int) x,(int) y));
+			intensities.add(edited.get((int) x,(int) y));
 
-			int intensity = proc2.get((int) x,(int) y) / 1000;
-			if ((x + 2 * minorx < proc2.getWidth() && x + 2 * minorx >= 0) && (x - 2 * minorx < proc2.getWidth() && x - 2 * minorx >= 0)) {
-				if ((y + 2 * minory < proc2.getHeight() && y + 2 * minory >= 0) && (y - 2 * minory < proc2.getHeight() && y - 2 * minory >= 0)) {
-					intensity += (proc2.get((int)(x + minorx), (int) (y + minory)) / 1000);
-					intensity += (proc2.get((int)(x - minorx), (int) (y - minory)) / 1000);	
-					intensity += (proc2.get((int)(x + 2 * minorx), (int) (y + 2 * minory)) / 1000);
-					intensity += (proc2.get((int)(x - 2 * minorx), (int) (y - 2 * minory)) / 1000);	
+			int intensity = original.get((int) x,(int) y) / 1000;
+			if ((x + 2 * minorx < original.getWidth() && x + 2 * minorx >= 0) && (x - 2 * minorx < original.getWidth() && x - 2 * minorx >= 0)) {
+				if ((y + 2 * minory < original.getHeight() && y + 2 * minory >= 0) && (y - 2 * minory < original.getHeight() && y - 2 * minory >= 0)) {
+					intensity += (original.get((int)(x + minorx), (int) (y + minory)) / 1000);
+					intensity += (original.get((int)(x - minorx), (int) (y - minory)) / 1000);	
+					intensity += (original.get((int)(x + 2 * minorx), (int) (y + 2 * minory)) / 1000);
+					intensity += (original.get((int)(x - 2 * minorx), (int) (y - 2 * minory)) / 1000);
+					
+					
+					// original.set((int) x, (int) y, 65534); uncomment this and comments underneath to see the line it draws
 				}
 			}
+			
+
 			
 			intensities_integrate.add(intensity);
 			if ((int) x == (int) xcm) {
@@ -735,7 +750,11 @@ public class Spindle_Length implements PlugInFilter {
 			pointsy.add(y);
 			//System.out.println(index);
 		} while ((x > ( Math.abs(xvector)) && y > (Math.abs(yvector))) && 
-				(x < (proc2.getWidth() - Math.abs(xvector)) && y < (proc2.getHeight() - Math.abs(yvector))));
+				(x < (original.getWidth() - Math.abs(xvector)) && y < (original.getHeight() - Math.abs(yvector))));
+
+//		ImagePlus show_line = new ImagePlus("cropped", original);
+//		show_line.show();
+		
 		
 		//System.out.println("here");
 		
@@ -756,6 +775,9 @@ public class Spindle_Length implements PlugInFilter {
 			}
 		}
 
+		
+		
+		
 		
 //		System.out.println(minindex);
 //		System.out.println(maxindex);
@@ -834,7 +856,7 @@ public class Spindle_Length implements PlugInFilter {
 
 		double length = Math.sqrt(deltax * deltax + deltay * deltay);
 		
-		double max_length = Math.sqrt(proc2.getHeight() * proc2.getHeight() + proc2.getWidth() * proc2.getWidth());
+		double max_length = Math.sqrt(original.getHeight() * original.getHeight() + original.getWidth() * original.getWidth());
 
 		System.out.println("R^2: " + rsquared);
 
@@ -895,7 +917,7 @@ public class Spindle_Length implements PlugInFilter {
 		
 		
 		
-		ImagePlus frame = IJ.openImage(imageName, 5);
+		ImagePlus frame = IJ.openImage(imageName, 85);
 		frame.show();
 		
 		

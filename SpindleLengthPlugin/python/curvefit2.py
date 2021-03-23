@@ -22,8 +22,9 @@ def pwerf(x, a1, a2, b, c1, c2, h):
 
 import sys
 
-
 f = open("python/intensitiesstring.txt", "r")
+
+## f = open("intensitiesstring.txt", "r")
 u1 = f.readline()
 u2 = f.readline()
 u3 = f.readline()
@@ -37,6 +38,13 @@ cm = float(u3)
 #print(len(a), len(b))
 
 ## define guesses for curve fit
+
+
+# import matplotlib.pyplot as plt
+# plt.plot(a, b, 'o')
+
+# plt.show()
+
 
 minindex = np.min(a)
 maxindex = np.max(a)
