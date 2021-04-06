@@ -302,6 +302,17 @@ public class Spindle_Length implements PlugInFilter {
 		);
 	}
 	
+	/**
+	 * converts x,y coordinates from non-rotated frame to rotated coordinate frame
+	 * shoutout to this link
+	 * https://gautamnagrawal.medium.com/rotating-image-by-any-angle-shear-transformation-using-only-numpy-d28d16eb5076
+	 * @param proc image
+	 * @param old_x old x
+	 * @param old_y old y
+	 * @param xvector principal axis x vector
+	 * @param yvector principal axis y vector
+	 * @return array [x,y] coordinates in new coordinates
+	 */
 	public static int[] old_to_new(ImageProcessor proc, double old_x, double old_y, double xvector, double yvector) {
 		double angle = Math.atan(yvector / xvector) * (180 / Math.PI); // angle from positive x axis
 		double rotation_angle = (270 + angle) * (Math.PI/180); // actual angle to rotate by (converted to radians)
@@ -334,6 +345,46 @@ public class Spindle_Length implements PlugInFilter {
 		int[] new_vals = {new_x_val, new_y_val};
 		
 		return new_vals;
+	}
+	
+	public static int[] new_to_old(ImageProcessor proc, double new_x, double new_y, double xvector, double yvector) {
+		double angle = Math.atan(yvector / xvector) * (180 / Math.PI); // angle from positive x axis
+		double rotation_angle = (270 + angle) * (Math.PI/180); // actual angle to rotate by (converted to radians)
+		
+		// I'm being lazy but we're basically un-rotating it so we can just rotate it by 
+		// 360 degrees (2pi radians) - original rotation angle
+		rotation_angle = 2*Math.PI - rotation_angle;
+		
+		double cos = Math.cos(rotation_angle);
+		double sin = Math.sin(rotation_angle);
+		
+		int height = proc.getHeight();
+		int width = proc.getWidth();
+		
+//		int new_height = ((int) (Math.abs(height * cos) + Math.abs(width * sin))) + 1;
+//		int new_width = ((int) (Math.abs(width * cos) + Math.abs(height * sin))) + 1;
+		
+		int new_height = proc.getHeight();
+		int new_width = proc.getWidth();
+				
+		int new_center_x = (int) ((new_width + 1) / 2 - 1);
+		int new_center_y = (int) ((new_height + 1) / 2 - 1); 
+		
+		double x = width - 1 - new_x - (int) ((width + 1)/2 - 1);
+		double y = height - 1 - new_y - (int) ((height + 1)/2 - 1);
+		
+		double old_x = cos * x + sin * y;
+		double old_y = -sin * x + cos*y;
+		
+		int new_x_val = new_center_x - (int) old_x;
+		int new_y_val = new_center_y - (int) old_y;
+		
+		int[] new_vals = {new_x_val, new_y_val};
+		
+		return new_vals;
+		
+		
+		
 	}
 	
 	public static ImageProcessor rotate(ImageProcessor proc, double xvector, double yvector) {
@@ -381,6 +432,12 @@ public class Spindle_Length implements PlugInFilter {
 		return rot;
 	}
 	
+	/**
+	 * gets angle of rotation based on principal axis eigenvectors
+	 * @param xvector x component of principal eigenvector
+	 * @param yvector y component of principal eigenvector
+	 * @return rotation angle to get principal axis vertical (I think it rotates clockwise)
+	 */
 	public static double getAngle(double xvector, double yvector) {
 		double angle = Math.atan(yvector / xvector) * (180 / Math.PI); // angle from positive x axis
 		double rotation_angle = (90 - angle); // actual angle to rotate by (in degrees)
@@ -388,10 +445,7 @@ public class Spindle_Length implements PlugInFilter {
 		return rotation_angle;
 	}
 	
-	public static ImageProcessor[] cropRotatedImage(ImageProcessor original, ImageProcessor edited, double xcm) {
-		
-		//ImagePlus new_im = new ImagePlus();
-		
+	public static int[] getCropAmount(ImageProcessor original, double xcm) {
 		int top = original.getHeight() - 1;
 		int bottom = 0;
 		
@@ -403,6 +457,38 @@ public class Spindle_Length implements PlugInFilter {
 			bottom++;
 		}
 		
+		int[] return_array = {top, bottom, original.getHeight() - 1 - top};
+		
+		return return_array;
+	}
+	
+	/**
+	 * crops the rotated image so there's no black padding on the edges
+	 * also crops the edited (thresholded) image the same way (important for backup method)
+	 * @param original rotated image processor that's not filtered
+	 * @param edited filtered rotated image processor
+	 * @param xcm center of mass x coordinate
+	 * @return array of cropped processors [original, edited]
+	 */
+	public static ImageProcessor[] cropRotatedImage(ImageProcessor original, ImageProcessor edited, double xcm) {
+		
+		//ImagePlus new_im = new ImagePlus();
+		
+//		int top = original.getHeight() - 1;
+//		int bottom = 0;
+//		
+//		while (original.get((int) xcm, top) == 0) {
+//			top--;
+//		}
+//		
+//		while (original.get((int) xcm, bottom) == 0) {
+//			bottom++;
+//		}
+		
+		int[] new_dims = getCropAmount(original, xcm);
+		int top = new_dims[0];
+		int bottom = new_dims[1];
+		
 		ImagePlus new_im_orig = NewImage.createImage("cropped", original.getWidth(), top - bottom + 1, 1, 16, 6);
 		ImagePlus new_im_edit = NewImage.createImage("cropped_edit", edited.getWidth(), top - bottom + 1, 1, 16, 6);
 		ImageProcessor new_proc = new_im_orig.getProcessor();
@@ -410,7 +496,7 @@ public class Spindle_Length implements PlugInFilter {
 		
 		System.out.println("Top, bottom = " + top + " , " + bottom);
 		
-		
+		// crop where there's nonzero pixels
 		for (int i = 0; i < original.getWidth(); i++) {
 			for (int j = 0; j < (top - bottom); j++)  {
 				new_proc.set(i, j, original.get(i, bottom + j));
@@ -424,6 +510,7 @@ public class Spindle_Length implements PlugInFilter {
 		
 		return proc_arr;
 	}
+	
 
 	public static double getLength(ImagePlus im, RoiManager m, double progress) throws Exception{
 		
@@ -633,8 +720,8 @@ public class Spindle_Length implements PlugInFilter {
 		
 		
 		// passes in matrix string to python script which outputs principal eigenvectors
-		double xvector = 1.0;
-		double yvector = 1.0;
+		double original_xvector = 1.0;
+		double original_yvector = 1.0;
 		
 		double minorx = 1.0;
 		double minory = 1.0;
@@ -647,8 +734,8 @@ public class Spindle_Length implements PlugInFilter {
 				p = Runtime.getRuntime().exec("python python/lazylinalg.py ");
 			}
 		    BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            xvector = Double.valueOf(stdInput.readLine());
-            yvector = Double.valueOf(stdInput.readLine());
+		    original_xvector = Double.valueOf(stdInput.readLine());
+		    original_yvector = Double.valueOf(stdInput.readLine());
             minorx = Double.valueOf(stdInput.readLine());
             minorx = Double.valueOf(stdInput.readLine());
             p.destroy();
@@ -664,14 +751,14 @@ public class Spindle_Length implements PlugInFilter {
 //		System.out.println("ycm:" + ycm);
 	
 		
-		double rot_angle = getAngle(xvector, yvector);
+		double rot_angle = getAngle(original_xvector, original_yvector);
 		
 		edited.rotate(rot_angle);
 		original.rotate(rot_angle);
 		
 		System.out.println("Rotation angle: " + rot_angle);
 		
-		int[] new_cms = old_to_new(edited, xcm, ycm, xvector, yvector);
+		int[] new_cms = old_to_new(edited, xcm, ycm, original_xvector, original_yvector);
 		
 		System.out.println("center of mass:" + new_cms[0] + " " + new_cms[1]);
 		
@@ -680,13 +767,22 @@ public class Spindle_Length implements PlugInFilter {
 		ImageProcessor cropped_original = cropped_procs[0];
 		ImageProcessor cropped_edited = cropped_procs[1];
 		ImagePlus cropped = new ImagePlus("cropped", cropped_original);
-		cropped.show();
+		//cropped.show();
 
+		int[] new_dims = getCropAmount(original, xcm);
+
+		
 		edited = cropped_edited;
 		original = cropped_original;
+		
+		int bottom_padding = new_dims[1];
+		int top_padding = new_dims[2];
+		
+		System.out.println("Top padding: " + top_padding + "Bottom padding: " + bottom_padding);
+		
 				
-		yvector = 1.0;
-		xvector = 0.0; // now that we've rotated the image for the spindle to be vertical
+		double yvector = 1.0;
+		double xvector = 0.0; // now that we've rotated the image for the spindle to be vertical
 		
 		minorx = 1.0;
 		minory = 0.0;
@@ -869,25 +965,43 @@ public class Spindle_Length implements PlugInFilter {
 			System.out.println("Curve fit was bad!");
 		}
 		
+		
+		double x_end1 = pointsx.get(minindex);
+		double y_end1 = pointsy.get(minindex);
+		double x_end2 = pointsx.get(maxindex);
+		double y_end2 = pointsy.get(maxindex);
+		
+		int[] rotate_end1 = new_to_old(original, x_end1, y_end1, original_xvector, original_yvector);
+		int[] rotate_end2 = new_to_old(original, x_end2, y_end2, original_xvector, original_yvector);
+		
+		int padding = top_padding;
+		if (rot_angle > 90) {
+			padding = bottom_padding;
+		}
+
+		
 		//new ImagePlus("image", proc).show();
 		
 		// add ROI circles on the ends of the spindle and add them to the ROI manager.
 		Vector<Roi> displayList = new Vector<Roi>();
-		Roi circle = new OvalRoi(pointsx.get(minindex), pointsy.get(minindex), 5, 5);
+		Roi circle = new OvalRoi(rotate_end1[0], rotate_end1[1] + padding, 5, 5);
 		circle.setFillColor(Color.MAGENTA);
-		Roi circle2 = new OvalRoi(pointsx.get(maxindex), pointsy.get(maxindex), 5, 5);
+		Roi circle2 = new OvalRoi(rotate_end2[0], rotate_end2[1] + padding, 5, 5);
 		circle2.setFillColor(Color.MAGENTA);
 		displayList.add(circle);
 		displayList.add(circle2);		
 		
+		
 //		ImagePlus new_im = new ImagePlus("rotated", proc2);	
 //		new_im.show();
+		//ImagePlus im = new ImagePlus("frame", cropped);
+		cropped.show();
 		ImageCanvas c = cropped.getCanvas();
 		//ImageCanvas c = im.getCanvas();
 		c.setDisplayList(displayList);
 		m.addRoi(circle);
 		m.addRoi(circle2);
-		
+//		
 		return length;
 
 	}
@@ -917,7 +1031,7 @@ public class Spindle_Length implements PlugInFilter {
 		
 		
 		
-		ImagePlus frame = IJ.openImage(imageName, 85);
+		ImagePlus frame = IJ.openImage(imageName, 1);
 		frame.show();
 		
 		
