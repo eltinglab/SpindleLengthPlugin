@@ -70,6 +70,7 @@ public class Spindle_Length implements PlugInFilter {
 
 		// Plugin runs on current open image
 		ImageStack stack = IJ.getImage().getImageStack();
+		
 //		
 //		String imageName = "input/Stack-1.tif";
 //		ImagePlus stack2 = IJ.openImage(imageName);
@@ -250,6 +251,7 @@ public class Spindle_Length implements PlugInFilter {
 		else {
 			throw new RuntimeException("not supported");
 		}
+
 	}
 
 	// processing of GRAY8 images
@@ -513,9 +515,17 @@ public class Spindle_Length implements PlugInFilter {
 	
 
 	public static double getLength(ImagePlus im, RoiManager m, double progress) throws Exception{
+	
 		
 		ImagePlus im2 = im.duplicate();
 		ImageProcessor edited = im2.getProcessor();
+		boolean flipped = false;
+		
+		if (edited.getWidth() > edited.getHeight()) {
+			edited = edited.rotateRight();
+			flipped = true;
+			
+		}
 
 	    System.err.println("Running");	
 		// normalize all images (with linear transformation) so they go from 0 to 65535
@@ -761,8 +771,6 @@ public class Spindle_Length implements PlugInFilter {
 		System.out.println("Rotation angle: " + rot_angle);
 		
 		int[] test_cms = old_to_new(original_dup, edited, xcm, ycm, original_xvector, original_yvector);
-
-		System.out.println("test cms: " + test_cms[0] + ", " + test_cms[1]);
 		
 		// need to crop the original and edited one the same way based on the original
 		ImageProcessor[] cropped_procs = cropRotatedImage(original, edited, test_cms[0]);
@@ -787,7 +795,7 @@ public class Spindle_Length implements PlugInFilter {
 		int top_padding = new_dims[2];
 		
 		
-		System.out.println("Top padding: " + top_padding + " Bottom padding: " + bottom_padding);
+		//System.out.println("Top padding: " + top_padding + " Bottom padding: " + bottom_padding);
 		
 				
 		double yvector = 1.0;
@@ -804,10 +812,7 @@ public class Spindle_Length implements PlugInFilter {
 			y += yvector;
 		}
 
-//		
-//		System.out.println(x);
-//		System.out.println(y);
-		
+
 		
 		ArrayList<Integer> intensities = new ArrayList<Integer>();
 		ArrayList<Integer> intensities_integrate = new ArrayList<Integer>();
@@ -823,9 +828,6 @@ public class Spindle_Length implements PlugInFilter {
 			x += -1 * xvector;
 			y += -1 * yvector;
 
-//			System.out.println(x);
-//			System.out.println(y);
-//			
 			
 			intensities.add(edited.get((int) x,(int) y));
 
@@ -984,10 +986,10 @@ public class Spindle_Length implements PlugInFilter {
 		double rot_xcm = new_cms[0];
 		double rot_ycm = new_cms[1];
 		
-		System.out.println("Original cms: " + xcm + ", " + ycm);
-		System.out.println("rotated xcms: " + rot_xcm + ", " + rot_ycm);
-		System.out.println("end 1 " + x_end1 + ", " + y_end1);
-		System.out.println("end 2 " + x_end2 + ", " + y_end2);
+//		System.out.println("Original cms: " + xcm + ", " + ycm);
+//		System.out.println("rotated xcms: " + rot_xcm + ", " + rot_ycm);
+//		System.out.println("end 1 " + x_end1 + ", " + y_end1);
+//		System.out.println("end 2 " + x_end2 + ", " + y_end2);
 		
 		double deltay1 = y_end1 - rot_ycm;
 		double deltay2 = y_end2 - rot_ycm;
@@ -999,8 +1001,17 @@ public class Spindle_Length implements PlugInFilter {
 		double xend2_final = xcm + deltay2 * Math.cos(real_angle);
 		double yend2_final = ycm + deltay2 * Math.sin(real_angle);
 
-
 //		
+		if (flipped) {
+			double temp = xend1_final;
+			xend1_final = yend1_final;
+			yend1_final = im.getHeight() - temp;
+			
+			temp = xend2_final;
+			xend2_final = yend2_final;
+			yend2_final = im.getHeight() - temp;
+		}
+		
 		//new ImagePlus("image", proc).show();
 		
 		// add ROI circles on the ends of the spindle and add them to the ROI manager.
@@ -1014,16 +1025,19 @@ public class Spindle_Length implements PlugInFilter {
 		
 		//cropped.show();
 
+//		
+//		ImagePlus disp = new ImagePlus("original", original_dup);
+//		disp.show();
 		
-		ImagePlus disp = new ImagePlus("original", original_dup);
-		disp.show();
+		im.show();
+
 
 //		ImagePlus new_im = new ImagePlus("rotated", proc2);	
 //		new_im.show();
 		//ImagePlus im = new ImagePlus("frame", cropped);
 		//cropped.show();
 		//ImageCanvas c = cropped.getCanvas();
-		ImageCanvas c = disp.getCanvas();
+		ImageCanvas c = im.getCanvas();
 		c.setDisplayList(displayList);
 		m.addRoi(circle);
 		m.addRoi(circle2);
@@ -1051,13 +1065,14 @@ public class Spindle_Length implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		String imageName = "input/Cell1.tif";
+		//String imageName = "input/Cell1.tif";
+		String imageName = "../../../Desktop/Stack.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 		
 		
 		
-		ImagePlus frame = IJ.openImage(imageName, 27);
+		ImagePlus frame = IJ.openImage(imageName, 15);
 		frame.show();
 		
 		
