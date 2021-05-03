@@ -761,7 +761,7 @@ public class Spindle_Length implements PlugInFilter {
 //		System.out.println("ycm:" + ycm);
 	
 		ImageProcessor original_dup = original.duplicate(); // copy of un-rotated image.
-		
+		ImageProcessor edited_dup = edited.duplicate();
 		
 		double rot_angle = getAngle(original_xvector, original_yvector);
 		
@@ -776,7 +776,7 @@ public class Spindle_Length implements PlugInFilter {
 		ImageProcessor[] cropped_procs = cropRotatedImage(original, edited, test_cms[0]);
 		ImageProcessor cropped_original = cropped_procs[0];
 		ImageProcessor cropped_edited = cropped_procs[1];
-		ImagePlus cropped = new ImagePlus("cropped", cropped_original);
+		ImagePlus cropped = new ImagePlus("cropped", edited_dup);
 		//cropped.show();
 		
 		int[] new_dims = getCropAmount(original, test_cms[0]);
@@ -882,7 +882,36 @@ public class Spindle_Length implements PlugInFilter {
 			}
 		}
 
+		int backup_x1 = 0;
+		int backup_x2 = 0;
+		int backup_y1 = 0;
+		int backup_y2 = 0;
 		
+		
+		outer: for (int i = 0; i < edited_dup.getHeight(); i++) {
+			for (int j = 0; j < edited_dup.getWidth(); j++) {
+				if (edited_dup.get(j,i) > 0) {
+					backup_x1 = j;
+					backup_y1 = i;
+					break outer;
+				}
+			}
+		}
+		
+		outer: for (int i = edited_dup.getHeight() - 1; i >= 0 ; i--) {
+			for (int j = 0; j < edited_dup.getWidth() ; j++) {
+				if (edited_dup.get(j,i) > 0) {
+					backup_x2 = j;
+					backup_y2 = i;
+					break outer;
+				}
+			}
+		}
+		
+		
+		//System.out.println(backup_x1 + " " + backup_y1 +  backup_x2 + " " + backup_y2);
+		double backup_length = Math.sqrt((backup_y1 - backup_y2)*(backup_y1 - backup_y2) + (backup_x1 - backup_x2)*(backup_x1 - backup_x2));
+		//System.out.println(backup_length);
 		
 		
 		
@@ -961,56 +990,78 @@ public class Spindle_Length implements PlugInFilter {
 		double deltax = Math.abs(pointsx.get(minindex) - pointsx.get(maxindex));
 		double deltay = Math.abs(pointsy.get(minindex) - pointsy.get(maxindex));
 
-		double length = Math.sqrt(deltax * deltax + deltay * deltay);
+		double length = backup_length;
 		
 		double max_length = Math.sqrt(original.getHeight() * original.getHeight() + original.getWidth() * original.getWidth());
 
 		System.out.println("R^2: " + rsquared);
 
+		double x_end1 = backup_x1;
+		double x_end2 = backup_x2;
+		double y_end1 = backup_y1;
+		double y_end2 = backup_y2;
+		
+		
+		double xend1_final = x_end1;
+		double yend1_final = y_end1;
+		double xend2_final = x_end2;
+		double yend2_final = y_end2;
+		
+		double rot_xcm = new_cms[0];
+		double rot_ycm = new_cms[1];
 		
 		if (rsquared >= 0.85 && l < max_length) {
 			minindex = oneend;
 			maxindex = otherend;
 			length = l;
+			
+			x_end1 = pointsx.get(minindex);
+			y_end1 = pointsy.get(minindex);
+			x_end2 = pointsx.get(maxindex);
+			y_end2 = pointsy.get(maxindex);
+			
+			
+			double deltay1 = y_end1 - rot_ycm;
+			double deltay2 = y_end2 - rot_ycm;
+			
+			double real_angle = Math.toRadians(90 - rot_angle);
+			
+			xend1_final = xcm + deltay1 * Math.cos(real_angle);
+			yend1_final = ycm + deltay1 * Math.sin(real_angle);
+			xend2_final = xcm + deltay2 * Math.cos(real_angle);
+			yend2_final = ycm + deltay2 * Math.sin(real_angle);
+			
+			
+			if (flipped) {
+				double temp = xend1_final;
+				xend1_final = yend1_final;
+				yend1_final = im.getHeight() - temp;
+				
+				temp = xend2_final;
+				xend2_final = yend2_final;
+				yend2_final = im.getHeight() - temp;
+			}
+			
 		} else {
 			System.out.println("Curve fit was bad!");
+		
 		}
 		
 		
-		double x_end1 = pointsx.get(minindex);
-		double y_end1 = pointsy.get(minindex);
-		double x_end2 = pointsx.get(maxindex);
-		double y_end2 = pointsy.get(maxindex);
+
 //	
 		
-		double rot_xcm = new_cms[0];
-		double rot_ycm = new_cms[1];
+
 		
 //		System.out.println("Original cms: " + xcm + ", " + ycm);
 //		System.out.println("rotated xcms: " + rot_xcm + ", " + rot_ycm);
 //		System.out.println("end 1 " + x_end1 + ", " + y_end1);
 //		System.out.println("end 2 " + x_end2 + ", " + y_end2);
 		
-		double deltay1 = y_end1 - rot_ycm;
-		double deltay2 = y_end2 - rot_ycm;
 		
-		double real_angle = Math.toRadians(90 - rot_angle);
-		
-		double xend1_final = xcm + deltay1 * Math.cos(real_angle);
-		double yend1_final = ycm + deltay1 * Math.sin(real_angle);
-		double xend2_final = xcm + deltay2 * Math.cos(real_angle);
-		double yend2_final = ycm + deltay2 * Math.sin(real_angle);
 
 //		
-		if (flipped) {
-			double temp = xend1_final;
-			xend1_final = yend1_final;
-			yend1_final = im.getHeight() - temp;
-			
-			temp = xend2_final;
-			xend2_final = yend2_final;
-			yend2_final = im.getHeight() - temp;
-		}
+
 		
 		//new ImagePlus("image", proc).show();
 		
@@ -1065,14 +1116,14 @@ public class Spindle_Length implements PlugInFilter {
 		new ImageJ();
 
 		// open the image
-		//String imageName = "input/Cell1.tif";
-		String imageName = "../../../Desktop/Stack.tif";
+		String imageName = "input/Cell1.tif";
+		//String imageName = "../../../Desktop/Stack.tif";
 		ImagePlus stack = IJ.openImage(imageName);
 		System.out.println("Stack size: " + stack.getStackSize());
 		
 		
 		
-		ImagePlus frame = IJ.openImage(imageName, 15);
+		ImagePlus frame = IJ.openImage(imageName, 100);
 		frame.show();
 		
 		
