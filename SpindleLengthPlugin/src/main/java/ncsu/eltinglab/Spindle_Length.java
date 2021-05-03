@@ -14,9 +14,11 @@ import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +73,7 @@ public class Spindle_Length implements PlugInFilter {
 		// Plugin runs on current open image
 		ImageStack stack = IJ.getImage().getImageStack();
 		
+		boolean generateFigs = true;
 //		
 //		String imageName = "input/Stack-1.tif";
 //		ImagePlus stack2 = IJ.openImage(imageName);
@@ -80,7 +83,9 @@ public class Spindle_Length implements PlugInFilter {
 		//System.out.println("Running");
 		
 		// prompts user for output filename
-		IJ.showMessage("Choose where to save output file, called lengths.csv");
+		if (!generateFigs) {
+			IJ.showMessage("Choose where to save output file, called lengths.csv");
+		}
 
 		String folder = IJ.getDirectory("Select folder: ");
 		String filename = folder + "lengths.csv";
@@ -103,7 +108,10 @@ public class Spindle_Length implements PlugInFilter {
 		// set up progress bar
 		double progress = 0.0;
 		IJ.showProgress(progress);
-		IJ.showMessage("Need to exit?", "Hold the the escape key to exit without saving anytime.");
+		
+		if (!generateFigs) {
+			IJ.showMessage("Need to exit?", "Hold the the escape key to exit without saving anytime.");
+		}
 		
 		// analyze images
 		//RoiManager manager = new RoiManager();
@@ -134,11 +142,15 @@ public class Spindle_Length implements PlugInFilter {
 			
 			} catch (Exception e) {
 				System.out.println("Had trouble measuring frame " + framenum + " :(");
+				lengths.add(0.0);
 			}
 			
 			try {
 				//TimeUnit.SECONDS.sleep(1); // display each frame for 1 second
-				TimeUnit.MILLISECONDS.sleep(500);
+				
+				if (!generateFigs) {
+					TimeUnit.MILLISECONDS.sleep(500);
+				}
 				if (IJ.escapePressed()) {
 					System.exit(1);
 				}
@@ -180,6 +192,20 @@ public class Spindle_Length implements PlugInFilter {
 		
 		}
 		out.close();
+		
+		
+		if (generateFigs) {
+			FileWriter fileWriter = null;
+			try {
+				fileWriter = new FileWriter("lengths.csv", true);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} //Set true for append mode
+		    PrintWriter printWriter = new PrintWriter(fileWriter);
+		    printWriter.println(lengths.get(0));  //New line
+		    printWriter.close();
+		}
 		
 		
 		// build stack with ROIs overlaid on it
