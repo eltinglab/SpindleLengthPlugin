@@ -73,7 +73,7 @@ public class Spindle_Length implements PlugInFilter {
 		// Plugin runs on current open image
 		ImageStack stack = IJ.getImage().getImageStack();
 		
-		boolean generateFigs = true;
+		boolean generateFigs = false;
 //		
 //		String imageName = "input/Stack-1.tif";
 //		ImagePlus stack2 = IJ.openImage(imageName);
