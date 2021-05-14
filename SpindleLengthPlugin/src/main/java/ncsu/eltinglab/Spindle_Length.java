@@ -197,7 +197,7 @@ public class Spindle_Length implements PlugInFilter {
 		if (generateFigs) {
 			FileWriter fileWriter = null;
 			try {
-				fileWriter = new FileWriter("lengths.csv", true);
+				fileWriter = new FileWriter("all_lengths.csv", true);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
